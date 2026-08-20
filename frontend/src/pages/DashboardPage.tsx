@@ -41,12 +41,39 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Farmer's synchronized location and crop preferences
+  const farmerState = localStorage.getItem('agricare_farmer_state') || 'Telangana';
+  const farmerDistrict = localStorage.getItem('agricare_farmer_district') || 'Warangal';
+  const farmLocation = localStorage.getItem('agricare_farm_location_name') || `${farmerDistrict}, ${farmerState}`;
+  const farmerCrop = (localStorage.getItem('agricare_farmer_crops')?.split(',')[0]?.trim()) || 'Tomato';
+
+  const farmCoords = (() => {
+    const saved = localStorage.getItem('agricare_farm_coords');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  })();
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const [marketRes, weatherRes, historyRes] = await Promise.allSettled([
-          api.getMarketPrices({ crop: 'Tomato' }),
-          api.getWeather({ location: 'Warangal, Telangana', crop: 'Tomato' }),
+          api.getMarketPrices({
+            crop: farmerCrop,
+            state: farmerState && farmerState !== 'All States' ? farmerState : undefined,
+            district: farmerDistrict || undefined
+          }),
+          api.getWeather({
+            location: farmLocation,
+            lat: farmCoords?.lat,
+            lon: farmCoords?.lon,
+            crop: farmerCrop
+          }),
           api.getScanHistory()
         ]);
 
@@ -61,7 +88,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     };
 
     fetchDashboardData();
-  }, []);
+  }, [farmLocation, farmerCrop, farmerDistrict, farmerState]);
 
   return (
     <div className="space-y-8 pb-12">
@@ -275,7 +302,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              Here is your farm intelligence overview for Warangal District, Telangana.
+              Here is your farm intelligence overview for {farmerDistrict} District, {farmerState}.
             </p>
           </div>
 
@@ -307,10 +334,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <ScanLine className="w-4 h-4 text-amber-600" />
             </div>
             <p className="text-sm font-black text-slate-900 truncate">
-              {recentScans[0]?.disease ? recentScans[0].disease.split('(')[0] : 'Tomato Early Blight'}
+              {recentScans[0]?.disease ? recentScans[0].disease.split('(')[0] : `${farmerCrop} Health Scan`}
             </p>
             <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded inline-block">
-              Moderate Risk
+              {recentScans[0]?.severity ? `${recentScans[0].severity} Risk` : 'Optimal State'}
             </span>
           </div>
 
@@ -320,10 +347,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <CloudSun className="w-4 h-4 text-emerald-600" />
             </div>
             <p className="text-2xl font-black text-slate-900">
-              {weatherData?.current?.temp_c ? `${weatherData.current.temp_c}°C` : '31°C'}
+              {weatherData?.current?.temp ? `${weatherData.current.temp}°C` : '31°C'}
             </p>
             <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded inline-block">
-              Safe Spraying Today
+              {weatherData?.agricultural_advisory?.spraying_advisory ? weatherData.agricultural_advisory.spraying_advisory.slice(0, 24) + '...' : 'Safe Spraying Today'}
             </span>
           </div>
 
@@ -333,10 +360,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <TrendingUp className="w-4 h-4 text-emerald-600" />
             </div>
             <p className="text-2xl font-black text-emerald-700">
-              {marketSummary?.summary?.avg_modal_price ? `₹${marketSummary.summary.avg_modal_price}` : '₹2,100'}
+              {marketSummary?.summary?.average_price ? `₹${marketSummary.summary.average_price}` : '₹2,100'}
             </p>
-            <span className="text-[11px] font-semibold text-slate-600">
-              Tomato / Qtl (Warangal)
+            <span className="text-[11px] font-semibold text-slate-600 truncate block">
+              {farmerCrop} / Qtl ({farmerDistrict})
             </span>
           </div>
 

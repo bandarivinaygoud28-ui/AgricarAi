@@ -12,8 +12,11 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     state = Column(String(100), default="Telangana")
     district = Column(String(100), default="Warangal")
-    location = Column(String(200), default="Warangal Rural")
-    main_crops = Column(String(255), default="Tomato,Paddy,Cotton")
+    village = Column(String(100), default="Enumamula")
+    location = Column(String(200), default="Enumamula, Warangal")
+    latitude = Column(Float, default=17.9689)
+    longitude = Column(Float, default=79.5941)
+    main_crops = Column(String(255), default="Tomato,Paddy,Cotton,Chilli")
     preferred_language = Column(String(10), default="en") # en, te, hi
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

@@ -33,6 +33,53 @@ export interface DiseaseScanResult {
   date?: string;
 }
 
+export interface MandiInfo {
+  id?: string;
+  name: string;
+  district: string;
+  state: string;
+  type?: string;
+  lat: number;
+  lon: number;
+  distance_km?: number;
+  apmc_code?: string;
+}
+
+export interface NearbyMarketOption {
+  id: string;
+  name: string;
+  district: string;
+  state: string;
+  distance_km: number;
+}
+
+export interface BestMarketComparisonItem {
+  mandi_id: string;
+  mandi_name: string;
+  district: string;
+  state: string;
+  distance_km: number;
+  modal_price: number;
+  price_per_kg: number;
+  min_price: number;
+  max_price: number;
+  variety: string;
+}
+
+export interface BestMarketInsight {
+  has_recommendation: boolean;
+  crop?: string;
+  nearest_market?: BestMarketComparisonItem;
+  best_price_market?: BestMarketComparisonItem;
+  is_different_market?: boolean;
+  price_difference_per_quintal?: number;
+  price_difference_per_kg?: number;
+  extra_distance_km?: number;
+  recommendation_text?: string;
+  disclaimer?: string;
+  comparisons?: BestMarketComparisonItem[];
+}
+
 export interface MarketPriceRecord {
   state: string;
   district: string;
@@ -42,7 +89,10 @@ export interface MarketPriceRecord {
   min_price: number;
   max_price: number;
   modal_price: number;
+  price_per_kg?: number;
+  price_type?: string;
   unit: string;
+  distance_km?: number;
   arrival_date: string;
 }
 
@@ -59,6 +109,9 @@ export interface MarketPricesResponse {
   notice: string;
   commodity: string;
   last_updated: string;
+  nearest_mandi?: MandiInfo;
+  nearby_markets?: NearbyMarketOption[];
+  best_market_to_sell?: BestMarketInsight | null;
   summary: MarketSummary;
   ai_insight: string;
   records: MarketPriceRecord[];
@@ -149,9 +202,21 @@ export interface FarmerProfile {
   email?: string;
   state: string;
   district: string;
+  village?: string;
   location: string;
+  latitude?: number;
+  longitude?: number;
   main_crops: string;
   preferred_language: LanguageCode;
+}
+
+export interface NewsArticlePriceInfo {
+  crop: string;
+  market: string;
+  price: string;
+  price_type?: string;
+  distance_km?: number;
+  price_date?: string;
 }
 
 export interface NewsArticle {
@@ -166,12 +231,37 @@ export interface NewsArticle {
   image_url: string;
   location_tag?: string;
   crop?: string;
+  priority_tier?: number;
+  tier_name?: string;
+  relevance_score?: number;
+  relevance_badge?: string;
+  relevance_reason?: string;
+  price_info?: NewsArticlePriceInfo | null;
   published_raw?: string;
+  published_timestamp?: number;
+}
+
+export interface NewsSections {
+  district_news: NewsArticle[];
+  crop_news: NewsArticle[];
+  nearby_mandi_news: NewsArticle[];
+  state_news: NewsArticle[];
+  india_news: NewsArticle[];
+  schemes_and_loans: NewsArticle[];
+  weather_and_alerts: NewsArticle[];
 }
 
 export interface NewsResponse {
   success: boolean;
   articles: NewsArticle[];
+  sections?: NewsSections;
+  farmer_context?: {
+    district?: string;
+    state?: string;
+    crops?: string[];
+    nearest_mandi?: string;
+    location_name?: string;
+  };
   count: number;
   last_updated: string;
   source: string;

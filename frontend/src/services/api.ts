@@ -2,6 +2,9 @@ import {
   DiseaseScanResult,
   MarketPricesResponse,
   MarketHistoryResponse,
+  MandiInfo,
+  BestMarketInsight,
+  NearbyMarketOption,
   WeatherData,
   LocationSearchResult,
   FarmerProfile,
@@ -133,6 +136,8 @@ export const api = {
     state?: string;
     district?: string;
     market?: string;
+    lat?: number;
+    lon?: number;
     date?: string;
   }): Promise<MarketPricesResponse> {
     const query = new URLSearchParams();
@@ -140,6 +145,8 @@ export const api = {
     if (params.state) query.append('state', params.state);
     if (params.district) query.append('district', params.district);
     if (params.market) query.append('market', params.market);
+    if (params.lat !== undefined && params.lat !== null) query.append('lat', String(params.lat));
+    if (params.lon !== undefined && params.lon !== null) query.append('lon', String(params.lon));
     if (params.date) query.append('date', params.date);
 
     const res = await fetch(`${API_BASE}/market-prices?${query.toString()}`);
@@ -152,6 +159,8 @@ export const api = {
     state?: string;
     district?: string;
     market?: string;
+    lat?: number;
+    lon?: number;
     days?: number;
   }): Promise<MarketHistoryResponse> {
     const query = new URLSearchParams();
@@ -159,10 +168,48 @@ export const api = {
     if (params.state) query.append('state', params.state);
     if (params.district) query.append('district', params.district);
     if (params.market) query.append('market', params.market);
+    if (params.lat !== undefined && params.lat !== null) query.append('lat', String(params.lat));
+    if (params.lon !== undefined && params.lon !== null) query.append('lon', String(params.lon));
     query.append('days', String(params.days || 7));
 
     const res = await fetch(`${API_BASE}/market-prices/history?${query.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch market price history');
+    return res.json();
+  },
+
+  async getBestMarketToSell(params: {
+    lat: number;
+    lon: number;
+    crop: string;
+  }): Promise<BestMarketInsight> {
+    const query = new URLSearchParams();
+    query.append('lat', String(params.lat));
+    query.append('lon', String(params.lon));
+    query.append('crop', params.crop || 'Tomato');
+
+    const res = await fetch(`${API_BASE}/market-prices/best-market?${query.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch best market recommendation');
+    return res.json();
+  },
+
+  async searchMandis(params: {
+    search?: string;
+    state?: string;
+    district?: string;
+    lat?: number;
+    lon?: number;
+    limit?: number;
+  }): Promise<MandiInfo[]> {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    if (params.state) query.append('state', params.state);
+    if (params.district) query.append('district', params.district);
+    if (params.lat !== undefined && params.lat !== null) query.append('lat', String(params.lat));
+    if (params.lon !== undefined && params.lon !== null) query.append('lon', String(params.lon));
+    if (params.limit) query.append('limit', String(params.limit));
+
+    const res = await fetch(`${API_BASE}/market-prices/mandis?${query.toString()}`);
+    if (!res.ok) throw new Error('Failed to search mandis');
     return res.json();
   },
 
@@ -204,10 +251,13 @@ export const api = {
 
   async reverseGeocode(lat: number, lon: number): Promise<{
     formatted_location: string;
+    village?: string;
     city: string;
     district: string;
     state: string;
     country: string;
+    lat?: number;
+    lon?: number;
   }> {
     try {
       const res = await fetch(`${API_BASE}/location/reverse?lat=${lat}&lon=${lon}`);
@@ -224,14 +274,19 @@ export const api = {
       if (directRes.ok) {
         const d = await directRes.json();
         const a = d.address || {};
-        const city = a.village || a.town || a.city || a.suburb || a.county || 'Local Farm';
+        const village = a.village || a.hamlet || a.suburb || a.town || a.city || 'Farm Location';
+        const city = a.city || a.town || village;
         const state = a.state || 'India';
+        const district = a.state_district || a.county || a.district || city;
         return {
-          formatted_location: `${city}, ${state}`,
+          formatted_location: `${village}, ${district}, ${state}`,
+          village,
           city,
-          district: a.state_district || a.county || city,
+          district,
           state,
-          country: a.country || 'India'
+          country: a.country || 'India',
+          lat,
+          lon
         };
       }
     } catch (err) {
@@ -239,11 +294,14 @@ export const api = {
     }
 
     return {
-      formatted_location: `Location (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`,
+      formatted_location: `Location (${lat.toFixed(4)}°, ${lon.toFixed(4)}°)`,
+      village: 'Farm Location',
       city: 'Farm Location',
       district: 'Regional District',
       state: 'India',
-      country: 'India'
+      country: 'India',
+      lat,
+      lon
     };
   },
 
@@ -358,6 +416,11 @@ export const api = {
     filter?: string;
     search?: string;
     location?: string;
+    district?: string;
+    state?: string;
+    crops?: string;
+    lat?: number;
+    lon?: number;
     language?: LanguageCode;
     limit?: number;
     force_refresh?: boolean;
@@ -367,6 +430,11 @@ export const api = {
     if (params.filter) query.append('filter', params.filter);
     if (params.search) query.append('search', params.search);
     if (params.location) query.append('location', params.location);
+    if (params.district) query.append('district', params.district);
+    if (params.state) query.append('state', params.state);
+    if (params.crops) query.append('crops', params.crops);
+    if (params.lat !== undefined && params.lat !== null) query.append('lat', String(params.lat));
+    if (params.lon !== undefined && params.lon !== null) query.append('lon', String(params.lon));
     if (params.language) query.append('language', params.language);
     if (params.limit) query.append('limit', String(params.limit));
     if (params.force_refresh) query.append('force_refresh', 'true');

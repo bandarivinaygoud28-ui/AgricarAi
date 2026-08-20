@@ -88,10 +88,15 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
     setIsSending(true);
 
     try {
+      const farmerLocation =
+        localStorage.getItem('agricare_farm_location_name') ||
+        `${localStorage.getItem('agricare_farmer_district') || 'Warangal'}, ${localStorage.getItem('agricare_farmer_state') || 'Telangana'}`;
+
       const res = await api.askAssistant(
         query.trim(),
         language,
-        activeDiagnosisContext || undefined
+        activeDiagnosisContext || undefined,
+        farmerLocation
       );
 
       const aiMsg: ChatMessage = {

@@ -15,7 +15,12 @@ from jose import JWTError, jwt
 from database.database import engine, Base, get_db
 from database.models import User, DiseaseScan, Resource, Booking
 from ai.prediction import generate_prediction
-from market.market_service import get_market_prices, get_market_price_history
+from market.market_service import (
+    get_market_prices,
+    get_market_price_history,
+    get_best_market_recommendation
+)
+from market.mandi_db import ALL_MANDIS, find_nearest_mandi, get_nearby_mandis
 from weather.weather_service import get_weather_data
 from assistant.assistant_service import process_assistant_query
 from news.news_service import fetch_live_agri_news, get_farmer_news
@@ -27,8 +32,22 @@ from resources.resource_service import (
 )
 from location.location_service import search_locations, reverse_geocode, detect_ip_location
 
-# Initialize database tables
+# Initialize database tables and ensure column migrations
 Base.metadata.create_all(bind=engine)
+try:
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info(users)"))
+        existing_cols = {row[1] for row in result.fetchall()}
+        if "village" not in existing_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN village VARCHAR(100) DEFAULT 'Enumamula'"))
+        if "latitude" not in existing_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN latitude FLOAT DEFAULT 17.9689"))
+        if "longitude" not in existing_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN longitude FLOAT DEFAULT 79.5941"))
+        conn.commit()
+except Exception as e:
+    print(f"DB column verification note: {e}")
 
 app = FastAPI(
     title="AgriCare AI API",
@@ -101,7 +120,10 @@ class RegisterRequest(BaseModel):
     email: Optional[str] = None
     state: Optional[str] = "Telangana"
     district: Optional[str] = "Warangal"
-    location: Optional[str] = "Warangal Rural"
+    village: Optional[str] = "Enumamula"
+    location: Optional[str] = "Enumamula, Warangal"
+    latitude: Optional[float] = 17.9689
+    longitude: Optional[float] = 79.5941
     main_crops: Optional[str] = "Tomato,Paddy,Cotton"
     preferred_language: Optional[str] = "en"
 
@@ -113,10 +135,14 @@ class LoginRequest(BaseModel):
 
 class ProfileUpdateRequest(BaseModel):
     name: Optional[str] = None
+    phone: Optional[str] = None
     email: Optional[str] = None
     state: Optional[str] = None
     district: Optional[str] = None
+    village: Optional[str] = None
     location: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     main_crops: Optional[str] = None
     preferred_language: Optional[str] = None
 
@@ -188,7 +214,10 @@ def register_farmer(req: RegisterRequest, db: Session = Depends(get_db)):
         password_hash=hashed_pw,
         state=req.state or "Telangana",
         district=req.district or "Warangal",
-        location=req.location or "Warangal Rural",
+        village=req.village or "Enumamula",
+        location=req.location or "Enumamula, Warangal",
+        latitude=req.latitude if req.latitude is not None else 17.9689,
+        longitude=req.longitude if req.longitude is not None else 79.5941,
         main_crops=req.main_crops or "Tomato,Paddy,Cotton",
         preferred_language=req.preferred_language or "en"
     )
@@ -207,7 +236,10 @@ def register_farmer(req: RegisterRequest, db: Session = Depends(get_db)):
             "email": user.email,
             "state": user.state,
             "district": user.district,
+            "village": user.village,
             "location": user.location,
+            "latitude": user.latitude,
+            "longitude": user.longitude,
             "main_crops": user.main_crops,
             "preferred_language": user.preferred_language
         }
@@ -231,7 +263,10 @@ def login_farmer(req: LoginRequest, db: Session = Depends(get_db)):
             "email": user.email,
             "state": user.state,
             "district": user.district,
+            "village": user.village,
             "location": user.location,
+            "latitude": user.latitude,
+            "longitude": user.longitude,
             "main_crops": user.main_crops,
             "preferred_language": user.preferred_language
         }
@@ -249,7 +284,10 @@ def get_farmer_profile(current_user: Optional[User] = Depends(get_current_user))
             "email": "ramesh.farmer@agricare.ai",
             "state": "Telangana",
             "district": "Warangal",
-            "location": "Warangal Rural (Enumamula)",
+            "village": "Enumamula",
+            "location": "Enumamula, Warangal",
+            "latitude": 17.9689,
+            "longitude": 79.5941,
             "main_crops": "Tomato,Paddy,Cotton,Chilli",
             "preferred_language": "en"
         }
@@ -260,7 +298,10 @@ def get_farmer_profile(current_user: Optional[User] = Depends(get_current_user))
         "email": current_user.email,
         "state": current_user.state,
         "district": current_user.district,
+        "village": current_user.village,
         "location": current_user.location,
+        "latitude": current_user.latitude,
+        "longitude": current_user.longitude,
         "main_crops": current_user.main_crops,
         "preferred_language": current_user.preferred_language
     }
@@ -276,10 +317,14 @@ def update_farmer_profile(
         return {"success": True, "message": "Profile updated in session", "profile": req.dict(exclude_unset=True)}
 
     if req.name is not None: current_user.name = req.name
+    if req.phone is not None: current_user.phone = req.phone
     if req.email is not None: current_user.email = req.email
     if req.state is not None: current_user.state = req.state
     if req.district is not None: current_user.district = req.district
+    if req.village is not None: current_user.village = req.village
     if req.location is not None: current_user.location = req.location
+    if req.latitude is not None: current_user.latitude = req.latitude
+    if req.longitude is not None: current_user.longitude = req.longitude
     if req.main_crops is not None: current_user.main_crops = req.main_crops
     if req.preferred_language is not None: current_user.preferred_language = req.preferred_language
 
@@ -292,7 +337,10 @@ def update_farmer_profile(
         "email": current_user.email,
         "state": current_user.state,
         "district": current_user.district,
+        "village": current_user.village,
         "location": current_user.location,
+        "latitude": current_user.latitude,
+        "longitude": current_user.longitude,
         "main_crops": current_user.main_crops,
         "preferred_language": current_user.preferred_language
     }}
@@ -533,9 +581,19 @@ def fetch_market_prices_endpoint(
     state: Optional[str] = Query(None),
     district: Optional[str] = Query(None),
     market: Optional[str] = Query(None),
+    lat: Optional[float] = Query(None),
+    lon: Optional[float] = Query(None),
     date: Optional[str] = Query(None)
 ):
-    return get_market_prices(crop=crop, state=state, district=district, market=market, date=date)
+    return get_market_prices(
+        crop=crop,
+        state=state,
+        district=district,
+        market=market,
+        lat=lat,
+        lon=lon,
+        date=date
+    )
 
 
 @app.get("/api/market-prices/history")
@@ -544,9 +602,57 @@ def fetch_market_price_history_endpoint(
     state: Optional[str] = Query(None),
     district: Optional[str] = Query(None),
     market: Optional[str] = Query(None),
+    lat: Optional[float] = Query(None),
+    lon: Optional[float] = Query(None),
     days: int = Query(7, ge=7, le=30)
 ):
-    return get_market_price_history(crop=crop, state=state, district=district, market=market, days=days)
+    return get_market_price_history(
+        crop=crop,
+        state=state,
+        district=district,
+        market=market,
+        lat=lat,
+        lon=lon,
+        days=days
+    )
+
+
+@app.get("/api/market-prices/best-market")
+def fetch_best_market_endpoint(
+    lat: float = Query(...),
+    lon: float = Query(...),
+    crop: str = Query("Tomato")
+):
+    return get_best_market_recommendation(lat=lat, lon=lon, crop=crop)
+
+
+@app.get("/api/market-prices/mandis")
+def list_mandis_endpoint(
+    search: Optional[str] = Query(None),
+    state: Optional[str] = Query(None),
+    district: Optional[str] = Query(None),
+    lat: Optional[float] = Query(None),
+    lon: Optional[float] = Query(None),
+    limit: int = Query(20, ge=1, le=100)
+):
+    results = ALL_MANDIS
+    if lat is not None and lon is not None:
+        results = get_nearby_mandis(lat, lon, limit=len(ALL_MANDIS))
+
+    if search:
+        s_lower = search.strip().lower()
+        results = [
+            m for m in results
+            if s_lower in m["name"].lower() or
+               s_lower in m["district"].lower() or
+               s_lower in m["state"].lower()
+        ]
+    if state and state != "All States":
+        results = [m for m in results if state.lower() in m["state"].lower()]
+    if district:
+        results = [m for m in results if district.lower() in m["district"].lower()]
+
+    return results[:limit]
 
 
 # ============================================================
@@ -574,8 +680,13 @@ def fetch_news(
     filter_type: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
+    district: Optional[str] = Query(None),
+    state: Optional[str] = Query(None),
+    crops: Optional[str] = Query(None),
+    lat: Optional[float] = Query(None),
+    lon: Optional[float] = Query(None),
     language: str = Query("en"),
-    limit: int = Query(25, ge=1, le=50),
+    limit: int = Query(35, ge=1, le=60),
     refresh: bool = Query(False, alias="force_refresh"),
     force_refresh: bool = Query(False)
 ):
@@ -586,6 +697,11 @@ def fetch_news(
         filter_type=filt,
         search=search,
         location=location,
+        district=district,
+        state=state,
+        crops=crops,
+        lat=lat,
+        lon=lon,
         language=language,
         limit=limit,
         force_refresh=refr

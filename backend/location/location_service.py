@@ -160,18 +160,20 @@ def reverse_geocode(lat: float, lon: float) -> Dict[str, Any]:
             data = res.json()
             address = data.get("address", {})
             
-            city = address.get("village") or address.get("town") or address.get("city") or address.get("suburb") or address.get("hamlet") or address.get("county") or "Farm Location"
-            district = address.get("state_district") or address.get("county") or city
+            village = address.get("village") or address.get("hamlet") or address.get("suburb") or address.get("neighbourhood") or address.get("town") or address.get("city") or "Farm Location"
+            city = address.get("city") or address.get("town") or village
+            district = address.get("state_district") or address.get("county") or address.get("district") or city
             state = address.get("state") or "India"
             country = address.get("country") or "India"
             postcode = address.get("postcode") or ""
 
-            formatted = f"{city}, {state}" if state else city
+            formatted = f"{village}, {district}, {state}" if district != village else f"{village}, {state}"
 
             return {
                 "success": True,
                 "lat": lat,
                 "lon": lon,
+                "village": village,
                 "city": city,
                 "district": district,
                 "state": state,
@@ -189,12 +191,13 @@ def reverse_geocode(lat: float, lon: float) -> Dict[str, Any]:
         "success": True,
         "lat": lat,
         "lon": lon,
+        "village": "Farm Location",
         "city": "Farm Location",
         "district": "Local Agricultural Region",
         "state": "India",
         "country": "India",
         "postcode": "",
-        "formatted_location": f"Coordinates ({lat:.2f}°, {lon:.2f}°)",
+        "formatted_location": f"Coordinates ({lat:.4f}°, {lon:.4f}°)",
         "display_name": f"Latitude: {lat}, Longitude: {lon}",
         "source": "AgriCare GPS Location Service"
     }
