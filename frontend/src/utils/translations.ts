@@ -306,8 +306,9 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
       "🍬 Sugar": "🍬 Sugar",
       "🌻 Oilseeds": "🌻 Oilseeds",
       "📈 Mandi / Commodity Market": "📈 Mandi / Commodity Market",
-      "🏛️ MSP / Government Procurement": "🏛️ MSP / Government Procurement",
-      "🚜 Agriculture Policies": "🚜 Agriculture Policies"
+      "🏛️ MSP": "🏛️ MSP",
+      "🏛️ Government / Agriculture Policy": "🏛️ Government / Agriculture Policy",
+      "🌾 General Agriculture": "🌾 General Agriculture"
     },
     newsFilters: {
       "All": "All News",
@@ -489,8 +490,9 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
       "🍬 Sugar": "🍬 చెరకు / చక్కెర",
       "🌻 Oilseeds": "🌻 నూనెగింజలు",
       "📈 Mandi / Commodity Market": "📈 మార్కెట్ యార్డులు / మండి",
-      "🏛️ MSP / Government Procurement": "🏛️ మద్దతు ధర (MSP) సేకరణ",
-      "🚜 Agriculture Policies": "🚜 వ్యవసాయ విధానాలు & పథకాలు"
+      "🏛️ MSP": "🏛️ మద్దతు ధర (MSP)",
+      "🏛️ Government / Agriculture Policy": "🏛️ వ్యవసాయ విధానాలు & పథకాలు",
+      "🌾 General Agriculture": "🌾 సాధారణ వ్యవసాయం"
     },
     newsFilters: {
       "All": "అన్ని వార్తలు",
@@ -672,8 +674,9 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
       "🍬 Sugar": "🍬 गन्ना / चीनी",
       "🌻 Oilseeds": "🌻 तिलहन",
       "📈 Mandi / Commodity Market": "📈 मंडी एवं कमोडिटी बाजार",
-      "🏛️ MSP / Government Procurement": "🏛️ न्यूनतम समर्थन मूल्य (MSP)",
-      "🚜 Agriculture Policies": "🚜 कृषि नीतियां एवं योजनाएं"
+      "🏛️ MSP": "🏛️ न्यूनतम समर्थन मूल्य (MSP)",
+      "🏛️ Government / Agriculture Policy": "🏛️ कृषि नीतियां एवं योजनाएं",
+      "🌾 General Agriculture": "🌾 सामान्य कृषि"
     },
     newsFilters: {
       "All": "सभी समाचार",

@@ -392,14 +392,145 @@ export const api = {
       // Direct live RSS fallback if backend is unreachable
     }
 
-    // Direct RSS fallback from Google News Agriculture RSS
-    const searchTerms = ['India', 'agriculture'];
+    // ── CLIENT-SIDE RSS FALLBACK (used when backend is unreachable) ──────────────
+    // Each article gets its OWN independently computed category, location tag and image.
+
+    const CATEGORY_IMAGES: Record<string, string[]> = {
+      '🌾 Paddy / Rice': [
+        'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1536304929831-ee1ca9d44906?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🌽 Maize': [
+        'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🧅 Onion': [
+        'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1508747703725-719777637510?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1587735243615-c03f25aaff15?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🥔 Potato': [
+        'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1590165482129-1b8b27698780?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🍅 Tomato': [
+        'https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1582284540020-8acbe03f4924?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🌶️ Chilli': [
+        'https://images.unsplash.com/photo-1588252303782-cb80119abd6d?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1563865436874-9aef32095fad?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1526344966286-56f5d815d3ab?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🫘 Pulses': [
+        'https://images.unsplash.com/photo-1515942400420-2b98fed1f515?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1584473457409-ae5c91d7d8b1?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1543362906-acfc16c67564?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🍬 Sugar': [
+        'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1527842891421-42eec6e703ea?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🌻 Oilseeds': [
+        'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=600&auto=format&fit=crop&q=80'
+      ],
+      '📈 Mandi / Commodity Market': [
+        'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🏛️ MSP': [
+        'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1595846519845-68e298c2edd8?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🏛️ Government / Agriculture Policy': [
+        'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1523741543316-beb7fc7023d8?w=600&auto=format&fit=crop&q=80'
+      ],
+      '🌾 General Agriculture': [
+        'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=600&auto=format&fit=crop&q=80'
+      ]
+    };
+
+    const detectArticleCategory = (title: string, summary: string): string => {
+      const text = (title + ' ' + summary).toLowerCase();
+      if (/\b(paddy|rice|basmati|dhan)\b/.test(text)) return '🌾 Paddy / Rice';
+      if (/\b(maize|corn|makka)\b/.test(text)) return '🌽 Maize';
+      if (/\b(onion|onions|pyaz|lasalgaon)\b/.test(text)) return '🧅 Onion';
+      if (/\b(potato|potatoes|aloo)\b/.test(text)) return '🥔 Potato';
+      if (/\b(tomato|tomatoes|tamatar)\b/.test(text)) return '🍅 Tomato';
+      if (/\b(chilli|chillies|chili|chilies|mirchi)\b/.test(text)) return '🌶️ Chilli';
+      if (/\b(pulses|pulse crop|lentil|lentils|arhar|toor dal|tur dal|chana|urad|moong|bengal gram|black gram|green gram|chickpea|pigeon pea|rajma|dal price)\b/.test(text)) return '🫘 Pulses';
+      if (/\b(sugar|sugarcane|ganna|sugar mill|frp)\b/.test(text)) return '🍬 Sugar';
+      if (/\b(oilseed|oilseeds|mustard|sarson|soybean|groundnut|peanut|sunflower|edible oil)\b/.test(text)) return '🌻 Oilseeds';
+      if (/\b(msp|minimum support price|procurement price|fci procurement)\b/.test(text)) return '🏛️ MSP';
+      if (/\b(mandi|mandis|apmc|e-nam|enam|agmarknet|wholesale market|wholesale price|market arrivals|spot prices|commodity market|commodity prices)\b/.test(text)) return '📈 Mandi / Commodity Market';
+      if (/\b(pm-kisan|pm kisan|agriculture ministry|ministry of agriculture|subsidy|subsidies|icar|agri policy|farm loan|krishi|drone subsidy|pmfby|fasal bima|nabard)\b/.test(text)) return '🏛️ Government / Agriculture Policy';
+      return '🌾 General Agriculture';
+    };
+
+    const detectArticleLocation = (text: string): string => {
+      const t = text.toLowerCase();
+      const stateMap: Array<[RegExp, string]> = [
+        [/\btelangana\b/, '📍 Telangana'],
+        [/\bandhra\s*pradesh\b/, '📍 Andhra Pradesh'],
+        [/\bkarnataka\b/, '📍 Karnataka'],
+        [/\bmaharashtra\b/, '📍 Maharashtra'],
+        [/\bpunjab\b/, '📍 Punjab'],
+        [/\bharyana\b/, '📍 Haryana'],
+        [/\buttar\s*pradesh\b/, '📍 Uttar Pradesh'],
+        [/\bmadhya\s*pradesh\b/, '📍 Madhya Pradesh'],
+        [/\bgujarat\b/, '📍 Gujarat'],
+        [/\brajasthan\b/, '📍 Rajasthan'],
+        [/\btamil\s*nadu\b/, '📍 Tamil Nadu'],
+        [/\bkerala\b/, '📍 Kerala'],
+        [/\bbihar\b/, '📍 Bihar'],
+        [/\bwest\s*bengal\b/, '📍 West Bengal'],
+        [/\bodisha\b/, '📍 Odisha'],
+        [/\bassam\b/, '📍 Assam'],
+      ];
+      for (const [regex, tag] of stateMap) {
+        if (regex.test(t)) return tag;
+      }
+      return '🇮🇳 India Agriculture';
+    };
+
+    const pickArticleImage = (category: string, title: string): string => {
+      const pool = CATEGORY_IMAGES[category] ?? CATEGORY_IMAGES['🌾 General Agriculture'];
+      const hash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      return pool[hash % pool.length];
+    };
+
+    const formatRssDate = (pubDate: string): string => {
+      try {
+        if (!pubDate) return 'Recently';
+        const d = new Date(pubDate);
+        const diffMins = Math.floor((Date.now() - d.getTime()) / 60000);
+        if (diffMins < 60) return `${Math.max(1, diffMins)}m ago`;
+        if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+        if (diffMins < 2880) return 'Yesterday';
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch { return 'Recently'; }
+    };
+
+    const searchTerms = ['India', 'agriculture', 'when:7d'];
     if (params.location) searchTerms.push(params.location.split(',').pop()?.trim() || '');
     if (params.search) searchTerms.push(params.search);
-    if (params.category && params.category !== 'All') searchTerms.push(params.category.replace(/[^\w\s]/g, '').trim());
+    if (params.category && params.category !== 'All') searchTerms.push(params.category.replace(/[^\w\s/]/g, '').trim());
     if (params.filter && params.filter !== 'All') searchTerms.push(params.filter);
 
-    const qStr = searchTerms.filter(Boolean).join(' ') || 'India agriculture mandi MSP commodity prices';
+    const qStr = searchTerms.filter(Boolean).join(' ') || 'India agriculture mandi MSP commodity prices when:7d';
     const rssUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://news.google.com/rss/search?q=${encodeURIComponent(qStr)}&hl=en-IN&gl=IN&ceid=IN:en`)}`;
 
     try {
@@ -408,36 +539,49 @@ export const api = {
         const xmlText = await directRes.text();
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-        const items = Array.from(xmlDoc.querySelectorAll('item')).slice(0, params.limit || 20);
+        const items = Array.from(xmlDoc.querySelectorAll('item')).slice(0, params.limit || 25);
+        const seenTitles = new Set<string>();
+        const parsedArticles: NewsArticle[] = [];
 
-        const parsedArticles: NewsArticle[] = items.map((item, idx) => {
+        for (const item of items) {
           const fullTitle = item.querySelector('title')?.textContent || '';
           const link = item.querySelector('link')?.textContent || '';
           const pubDate = item.querySelector('pubDate')?.textContent || '';
-          const desc = item.querySelector('description')?.textContent?.replace(/<[^>]*>/g, '') || fullTitle;
-          const title = fullTitle.includes(' - ') ? fullTitle.split(' - ')[0] : fullTitle;
-          const source = fullTitle.includes(' - ') ? fullTitle.split(' - ').pop() || 'Agri News' : 'Agri News';
+          const rawDesc = item.querySelector('description')?.textContent || '';
+          const desc = rawDesc.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+          const title = fullTitle.includes(' - ') ? fullTitle.split(' - ').slice(0, -1).join(' - ') : fullTitle;
+          const source = fullTitle.includes(' - ') ? (fullTitle.split(' - ').pop() || 'Agri News') : 'Agri News';
 
-          return {
-            id: `rss_${idx}_${Date.now()}`,
+          const titleKey = title.toLowerCase().replace(/\W+/g, '');
+          if (!titleKey || seenTitles.has(titleKey)) continue;
+          seenTitles.add(titleKey);
+
+          const summary = desc || title;
+          const category = detectArticleCategory(title, summary);
+          const location_tag = detectArticleLocation(title + ' ' + summary);
+          const image_url = pickArticleImage(category, title);
+
+          parsedArticles.push({
+            id: `rss_${titleKey.substring(0, 8)}_${parsedArticles.length}`,
             title,
-            summary: desc,
-            content: desc,
-            category: params.category && params.category !== 'All' ? params.category : '📈 Mandi / Commodity Market',
+            summary,
+            content: summary,
+            category,
             source,
-            date: pubDate ? new Date(pubDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently',
+            date: formatRssDate(pubDate),
             url: link,
-            image_url: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&auto=format&fit=crop&q=80',
-            location_tag: params.location ? `📍 ${params.location.split(',').pop()?.trim()}` : '🇮🇳 National'
-          };
-        });
+            image_url,
+            location_tag
+          });
+        }
 
         if (parsedArticles.length > 0) {
+          const now = new Date();
           return {
             success: true,
             articles: parsedArticles,
             count: parsedArticles.length,
-            last_updated: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+            last_updated: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ', ' + now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
             source: 'Live Google News Indian Agriculture Feed',
             is_live: true
           };

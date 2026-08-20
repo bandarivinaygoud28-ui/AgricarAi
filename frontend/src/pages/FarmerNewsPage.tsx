@@ -33,9 +33,11 @@ const CROP_CATEGORIES = [
   "🍬 Sugar",
   "🌻 Oilseeds",
   "📈 Mandi / Commodity Market",
-  "🏛️ MSP / Government Procurement",
-  "🚜 Agriculture Policies"
+  "🏛️ MSP",
+  "🏛️ Government / Agriculture Policy",
+  "🌾 General Agriculture"
 ];
+
 
 const FILTER_TABS = [
   "All",

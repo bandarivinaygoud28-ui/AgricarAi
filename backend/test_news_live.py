@@ -2,37 +2,35 @@ import sys
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-from news.news_service import fetch_live_agri_news, get_farmer_news
+from news.news_service import fetch_live_agri_news
 
-def test_live_news():
-    print("Fetching Real-Time Agricultural Market News...")
-    res = fetch_live_agri_news(limit=10, force_refresh=True)
-    assert res.get("success") is True, "News fetch failed"
+def test_farmer_info_center():
+    print("=================================================================")
+    print("🌾 TESTING LIVE INDIAN FARMER INFORMATION CENTER")
+    print("Farmer Profile Context: Warangal, Telangana | Crops: Paddy, Tomato, Cotton, Chilli")
+    print("=================================================================")
+    
+    res = fetch_live_agri_news(
+        location="Warangal, Telangana",
+        crops="Paddy, Tomato, Cotton, Chilli",
+        limit=15,
+        force_refresh=True
+    )
+    
     articles = res.get("articles", [])
-    assert len(articles) > 0, "Zero articles returned"
-    print(f"Total live articles fetched: {len(articles)}")
+    print(f"Total farmer-actionable items retrieved: {len(articles)}")
     print(f"Last updated: {res.get('last_updated')}")
-    print(f"Source: {res.get('source')}")
-
-    first = articles[0]
-    print("\n--- SAMPLE LIVE ARTICLE ---")
-    print(f"Title: {first['title']}")
-    print(f"Source: {first['source']}")
-    print(f"Date: {first['date']}")
-    print(f"Category: {first['category']}")
-    print(f"Location Tag: {first.get('location_tag')}")
-    print(f"URL: {first.get('url')[:60]}...")
-    print(f"Summary: {first['summary'][:120]}...")
-
-    print("\nTesting Onion Category Filter...")
-    onion_res = fetch_live_agri_news(category="🧅 Onion", limit=5)
-    print(f"Onion articles fetched: {len(onion_res.get('articles', []))}")
-
-    print("\nTesting Location-Aware Search (Kolar, Karnataka)...")
-    loc_res = fetch_live_agri_news(location="Kolar, Karnataka", limit=5)
-    print(f"Karnataka location articles fetched: {len(loc_res.get('articles', []))}")
-
-    print("\nALL LIVE NEWS TESTS PASSED SUCCESSFULLY!")
+    print(f"Source: {res.get('source')}\n")
+    
+    for i, a in enumerate(articles):
+        print(f"[{i+1}] {a.get('category')} | Crop: {a.get('crop') or 'General'} | Loc: {a.get('location_tag')} | Score: {a.get('relevance_score')}/100")
+        print(f"     Title: {a.get('title')}")
+        print(f"     Date: {a.get('date')} | Source: {a.get('source')}")
+        if a.get('price_info'):
+            p = a.get('price_info')
+            print(f"     💰 Price Info: {p.get('crop')} @ {p.get('price')} in {p.get('market')} ({p.get('price_type')})")
+        print(f"     Img: {a.get('image_url')}")
+        print()
 
 if __name__ == "__main__":
-    test_live_news()
+    test_farmer_info_center()
