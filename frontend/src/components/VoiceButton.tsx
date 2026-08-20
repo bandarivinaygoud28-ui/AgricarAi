@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mic, MicOff, Volume2, VolumeX, AlertCircle } from 'lucide-react';
 import { LanguageCode } from '../types';
+import { speechService } from '../utils/speechService';
 
 interface VoiceButtonProps {
   onSpeechResult?: (transcript: string) => void;
   textToSpeak?: string;
   language: LanguageCode;
   mode?: 'listen' | 'speak';
+  speed?: number;
+  voiceURI?: string;
   className?: string;
 }
 
@@ -15,10 +18,23 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
   textToSpeak,
   language,
   mode = 'listen',
+  speed,
+  voiceURI,
   className = ""
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Listen for global speech service status changes
+    const unsubscribe = speechService.onSpeakingStatusChange((speaking) => {
+      if (!speaking) {
+        setIsSpeaking(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const getLangTag = (l: LanguageCode) => {
     switch (l) {
@@ -73,42 +89,72 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
     }
   };
 
-  const handleToggleSpeak = () => {
-    if (!window.speechSynthesis || !textToSpeak) return;
+  const handleToggleSpeak = async () => {
+    if (!textToSpeak) return;
 
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      speechService.cancel();
       setIsSpeaking(false);
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utterance.lang = getLangTag(language);
-    utterance.rate = 0.95;
+    setVoiceError(null);
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    // Verify voice availability first
+    const voiceInfo = speechService.getBestVoice(language, voiceURI);
+    if (!voiceInfo.isAvailable || !voiceInfo.voice) {
+      const msg =
+        voiceInfo.unavailableMessage ||
+        (language === 'te'
+          ? 'Telugu voice is not available on this device/browser. Please install or enable a Telugu speech voice, or use a browser/device with Telugu TTS support.'
+          : language === 'hi'
+          ? 'Hindi voice is not available on this device/browser. Please install or enable a Hindi speech voice, or use a browser/device with Hindi TTS support.'
+          : 'English voice is not available on this device/browser.');
+      
+      setVoiceError(msg);
+      alert(msg);
+      return;
+    }
 
-    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+    await speechService.speak(textToSpeak, language, {
+      speed,
+      voiceURI,
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+      onError: (err) => {
+        setIsSpeaking(false);
+        setVoiceError(err);
+      }
+    });
   };
 
   if (mode === 'speak') {
     return (
-      <button
-        type="button"
-        onClick={handleToggleSpeak}
-        className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
-          isSpeaking
-            ? 'bg-emerald-600 text-white border-emerald-600 animate-pulse'
-            : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-        } ${className}`}
-        title="Listen to speech readout"
-      >
-        {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-        <span>{isSpeaking ? 'Stop Voice' : 'Voice Readout'}</span>
-      </button>
+      <div className="relative inline-flex items-center">
+        <button
+          type="button"
+          onClick={handleToggleSpeak}
+          className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+            isSpeaking
+              ? 'bg-emerald-600 text-white border-emerald-600 animate-pulse ring-2 ring-emerald-300'
+              : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 shadow-xs'
+          } ${className}`}
+          title={isSpeaking ? 'Stop speaking' : 'Listen to speech readout'}
+        >
+          {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          <span>{isSpeaking ? 'Stop Voice' : 'Voice Readout'}</span>
+        </button>
+
+        {voiceError && (
+          <span
+            className="absolute left-0 -top-8 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded shadow-md whitespace-nowrap z-20 flex items-center gap-1"
+            title={voiceError}
+          >
+            <AlertCircle className="w-3 h-3" /> Voice unavailable
+          </span>
+        )}
+      </div>
     );
   }
 
