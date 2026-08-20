@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Volume2, VolumeX, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Pause, Play, Loader2, AlertCircle } from 'lucide-react';
 import { LanguageCode } from '../types';
-import { speechService } from '../utils/speechService';
+import { speechService, SpeechState } from '../utils/speechService';
 
 interface VoiceButtonProps {
   onSpeechResult?: (transcript: string) => void;
@@ -9,7 +9,6 @@ interface VoiceButtonProps {
   language: LanguageCode;
   mode?: 'listen' | 'speak';
   speed?: number;
-  voiceURI?: string;
   className?: string;
 }
 
@@ -19,18 +18,18 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
   language,
   mode = 'listen',
   speed,
-  voiceURI,
   className = ""
 }) => {
   const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [speechState, setSpeechState] = useState<SpeechState>(speechService.getState());
+  const [isCurrentSpeaker, setIsCurrentSpeaker] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Listen for global speech service status changes
-    const unsubscribe = speechService.onSpeakingStatusChange((speaking) => {
-      if (!speaking) {
-        setIsSpeaking(false);
+    const unsubscribe = speechService.onStateChange((state) => {
+      setSpeechState(state);
+      if (state === 'idle') {
+        setIsCurrentSpeaker(false);
       }
     });
     return () => unsubscribe();
@@ -45,10 +44,9 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
   };
 
   const handleToggleListen = () => {
-    // Check Web Speech API
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Please use Google Chrome or Edge.");
+      alert("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
       return;
     }
 
@@ -92,66 +90,102 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
   const handleToggleSpeak = async () => {
     if (!textToSpeak) return;
 
-    if (isSpeaking) {
-      speechService.cancel();
-      setIsSpeaking(false);
+    if (isCurrentSpeaker && (speechState === 'speaking' || speechState === 'generating')) {
+      speechService.stop();
+      setIsCurrentSpeaker(false);
       return;
     }
 
-    setVoiceError(null);
-
-    // Verify voice availability first
-    const voiceInfo = speechService.getBestVoice(language, voiceURI);
-    if (!voiceInfo.isAvailable || !voiceInfo.voice) {
-      const msg =
-        voiceInfo.unavailableMessage ||
-        (language === 'te'
-          ? 'Telugu voice is not available on this device/browser. Please install or enable a Telugu speech voice, or use a browser/device with Telugu TTS support.'
-          : language === 'hi'
-          ? 'Hindi voice is not available on this device/browser. Please install or enable a Hindi speech voice, or use a browser/device with Hindi TTS support.'
-          : 'English voice is not available on this device/browser.');
-      
-      setVoiceError(msg);
-      alert(msg);
+    if (isCurrentSpeaker && speechState === 'paused') {
+      speechService.resume();
       return;
     }
 
-    setIsSpeaking(true);
+    setErrorMessage(null);
+    setIsCurrentSpeaker(true);
+
     await speechService.speak(textToSpeak, language, {
       speed,
-      voiceURI,
-      onStart: () => setIsSpeaking(true),
-      onEnd: () => setIsSpeaking(false),
+      onStart: () => setIsCurrentSpeaker(true),
+      onEnd: () => setIsCurrentSpeaker(false),
       onError: (err) => {
-        setIsSpeaking(false);
-        setVoiceError(err);
+        setIsCurrentSpeaker(false);
+        setErrorMessage(err);
+        alert(err);
       }
     });
   };
 
+  const handlePauseResume = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (speechState === 'speaking') {
+      speechService.pause();
+    } else if (speechState === 'paused') {
+      speechService.resume();
+    }
+  };
+
   if (mode === 'speak') {
+    const isThisButtonActive = isCurrentSpeaker && speechState !== 'idle';
+    const isGeneratingThis = isCurrentSpeaker && speechState === 'generating';
+    const isSpeakingThis = isCurrentSpeaker && speechState === 'speaking';
+    const isPausedThis = isCurrentSpeaker && speechState === 'paused';
+
     return (
-      <div className="relative inline-flex items-center">
+      <div className="inline-flex items-center gap-1">
         <button
           type="button"
           onClick={handleToggleSpeak}
+          disabled={isGeneratingThis}
           className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
-            isSpeaking
+            isSpeakingThis
               ? 'bg-emerald-600 text-white border-emerald-600 animate-pulse ring-2 ring-emerald-300'
-              : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 shadow-xs'
+              : isGeneratingThis
+              ? 'bg-amber-50 text-amber-800 border-amber-300 cursor-wait'
+              : isPausedThis
+              ? 'bg-amber-500 text-white border-amber-600'
+              : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 shadow-2xs'
           } ${className}`}
-          title={isSpeaking ? 'Stop speaking' : 'Listen to speech readout'}
+          title={isThisButtonActive ? 'Stop playback' : 'Listen to speech readout (Neural Voice)'}
         >
-          {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          <span>{isSpeaking ? 'Stop Voice' : 'Voice Readout'}</span>
+          {isGeneratingThis ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+              <span>Generating voice...</span>
+            </>
+          ) : isSpeakingThis ? (
+            <>
+              <VolumeX className="w-3.5 h-3.5" />
+              <span>Stop Voice</span>
+            </>
+          ) : isPausedThis ? (
+            <>
+              <Play className="w-3.5 h-3.5" />
+              <span>Resume</span>
+            </>
+          ) : (
+            <>
+              <Volume2 className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Voice Readout</span>
+            </>
+          )}
         </button>
 
-        {voiceError && (
-          <span
-            className="absolute left-0 -top-8 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded shadow-md whitespace-nowrap z-20 flex items-center gap-1"
-            title={voiceError}
+        {/* Pause/Resume secondary button when active */}
+        {isSpeakingThis && (
+          <button
+            type="button"
+            onClick={handlePauseResume}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold transition-all shadow-2xs"
+            title="Pause speech"
           >
-            <AlertCircle className="w-3 h-3" /> Voice unavailable
+            <Pause className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {errorMessage && (
+          <span className="text-red-500 text-[10px] flex items-center gap-0.5">
+            <AlertCircle className="w-3 h-3" /> Error
           </span>
         )}
       </div>

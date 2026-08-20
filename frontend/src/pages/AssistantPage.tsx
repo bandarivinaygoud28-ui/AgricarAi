@@ -6,7 +6,9 @@ import { VoiceButton } from '../components/VoiceButton';
 import {
   speechService,
   VoiceInfo,
+  SpeechState,
   LANGUAGE_DISPLAY,
+  NEURAL_VOICE_NAMES,
   VOICE_TEST_PROMPTS
 } from '../utils/speechService';
 import {
@@ -21,12 +23,15 @@ import {
   Volume2,
   VolumeX,
   Settings,
-  AlertTriangle,
   CheckCircle2,
   Mic,
   Sliders,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2,
+  Pause,
+  Play,
+  Radio
 } from 'lucide-react';
 
 interface AssistantPageProps {
@@ -44,51 +49,24 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
 
   // Speech settings state
   const [speechSpeed, setSpeechSpeed] = useState<number>(() => {
-    return (language === 'te' || language === 'hi') ? 0.85 : 0.95;
+    return (language === 'te' || language === 'hi') ? 0.85 : 1.0;
   });
-  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
-  const [voiceInfo, setVoiceInfo] = useState<VoiceInfo>(() =>
-    speechService.getBestVoice(language)
-  );
-  const [availableLanguageVoices, setAvailableLanguageVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [isTestingVoice, setIsTestingVoice] = useState<boolean>(false);
+  const [speechState, setSpeechState] = useState<SpeechState>(speechService.getState());
   const [showVoiceSettings, setShowVoiceSettings] = useState<boolean>(false);
 
-  // Sync default speed and voice when language changes
+  // Sync default speed when language changes
   useEffect(() => {
-    const defaultSpeed = (language === 'te' || language === 'hi') ? 0.85 : 0.95;
+    const defaultSpeed = (language === 'te' || language === 'hi') ? 0.85 : 1.0;
     setSpeechSpeed(defaultSpeed);
-    setSelectedVoiceURI('');
-    
-    const info = speechService.getBestVoice(language);
-    setVoiceInfo(info);
-    setAvailableLanguageVoices(speechService.getVoicesForLanguage(language));
   }, [language]);
 
-  // Listen for browser voices loaded / changed
+  // Listen for speech status changes
   useEffect(() => {
-    const updateVoiceState = () => {
-      const info = speechService.getBestVoice(language, selectedVoiceURI || undefined);
-      setVoiceInfo(info);
-      setAvailableLanguageVoices(speechService.getVoicesForLanguage(language));
-    };
-
-    updateVoiceState();
-    const unsubVoices = speechService.onVoicesChanged(() => {
-      updateVoiceState();
+    const unsubscribe = speechService.onStateChange((state) => {
+      setSpeechState(state);
     });
-
-    const unsubSpeaking = speechService.onSpeakingStatusChange((speaking) => {
-      if (!speaking) {
-        setIsTestingVoice(false);
-      }
-    });
-
-    return () => {
-      unsubVoices();
-      unsubSpeaking();
-    };
-  }, [language, selectedVoiceURI]);
+    return () => unsubscribe();
+  }, []);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -193,28 +171,18 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
   };
 
   const handleTestVoice = async () => {
-    if (isTestingVoice) {
-      speechService.cancel();
-      setIsTestingVoice(false);
+    if (speechState === 'speaking' || speechState === 'generating') {
+      speechService.stop();
+      return;
+    }
+    if (speechState === 'paused') {
+      speechService.resume();
       return;
     }
 
-    if (!voiceInfo.isAvailable || !voiceInfo.voice) {
-      alert(
-        voiceInfo.unavailableMessage ||
-        `${LANGUAGE_DISPLAY[language].name} voice is not available on this device.`
-      );
-      return;
-    }
-
-    setIsTestingVoice(true);
     await speechService.testVoice(language, {
       speed: speechSpeed,
-      voiceURI: selectedVoiceURI || undefined,
-      onStart: () => setIsTestingVoice(true),
-      onEnd: () => setIsTestingVoice(false),
       onError: (err) => {
-        setIsTestingVoice(false);
         alert(err);
       }
     });
@@ -240,6 +208,8 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
       query: language === 'te' ? "ఈ రోజు మందులు స్ప్రే చేయడానికి వాతావరణం అనుకూలమా?" : language === 'hi' ? "क्या आज कीटनाशक छिड़काव के लिए मौसम सही है?" : "Is the weather suitable for chemical spraying today?"
     }
   ];
+
+  const activeVoiceName = NEURAL_VOICE_NAMES[language] || `${LANGUAGE_DISPLAY[language].name} Neural`;
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto pb-12">
@@ -283,12 +253,12 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
         </div>
 
         {/* Voice AI Status & Controls Bar */}
-        <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-4">
+        <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {/* Language Display */}
             <div className="flex items-center gap-1.5">
               <span className="text-slate-400 font-medium">Language:</span>
-              <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+              <span className="font-bold text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
                 {LANGUAGE_DISPLAY[language].nativeName}
               </span>
             </div>
@@ -296,19 +266,15 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
             {/* Voice Status Display */}
             <div className="flex items-center gap-1.5">
               <span className="text-slate-400 font-medium">Voice:</span>
-              {voiceInfo.isAvailable ? (
-                <span className="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  <span className="max-w-[180px] sm:max-w-[240px] truncate" title={voiceInfo.voiceName}>
-                    {voiceInfo.voiceName}
-                  </span>
+              <span className="font-semibold text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
+                <Radio className="w-3 h-3 text-emerald-600 animate-pulse" />
+                <span className="max-w-[200px] sm:max-w-[260px] truncate font-bold">
+                  {activeVoiceName}
                 </span>
-              ) : (
-                <span className="font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3 text-amber-600" />
-                  <span>{voiceInfo.voiceName}</span>
+                <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-sm hidden sm:inline">
+                  Neural
                 </span>
-              )}
+              </span>
             </div>
 
             {/* Speech Speed Indicator */}
@@ -320,57 +286,71 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
             </div>
           </div>
 
-          {/* Test Voice Button */}
+          {/* Test Voice Button with Live Status */}
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleTestVoice}
-              className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 shadow-2xs border ${
-                isTestingVoice
-                  ? 'bg-emerald-600 text-white border-emerald-600 animate-pulse'
-                  : voiceInfo.isAvailable
-                  ? 'bg-white text-emerald-800 border-emerald-300 hover:bg-emerald-50'
-                  : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+              disabled={speechState === 'generating'}
+              className={`px-3.5 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 shadow-xs border ${
+                speechState === 'speaking'
+                  ? 'bg-emerald-600 text-white border-emerald-600 animate-pulse ring-2 ring-emerald-300'
+                  : speechState === 'generating'
+                  ? 'bg-amber-100 text-amber-900 border-amber-300 cursor-wait'
+                  : speechState === 'paused'
+                  ? 'bg-amber-500 text-white border-amber-600'
+                  : 'bg-emerald-700 text-white hover:bg-emerald-800 border-emerald-800'
               }`}
-              title="Test Voice Pronunciation"
+              title="Test Cloud Voice Pronunciation"
             >
-              {isTestingVoice ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-600" />}
-              <span>{isTestingVoice ? 'Stop Testing' : '🔊 Test Voice'}</span>
+              {speechState === 'generating' ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Generating voice...</span>
+                </>
+              ) : speechState === 'speaking' ? (
+                <>
+                  <VolumeX className="w-3.5 h-3.5" />
+                  <span>Stop Voice</span>
+                </>
+              ) : speechState === 'paused' ? (
+                <>
+                  <Play className="w-3.5 h-3.5" />
+                  <span>Resume</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>🔊 Test Voice</span>
+                </>
+              )}
             </button>
           </div>
         </div>
 
         {/* Collapsible Voice Settings Panel */}
         {showVoiceSettings && (
-          <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-200/80 space-y-3 text-xs">
+          <div className="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-200/80 space-y-3 text-xs">
             <div className="font-bold text-slate-800 flex items-center gap-1.5">
               <Settings className="w-4 h-4 text-emerald-700" />
-              <span>Voice AI Synthesis Settings</span>
+              <span>Cloud Neural Voice Configuration</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Voice Dropdown */}
+              {/* Active Voice Provider */}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Installed Voice:
+                  Active Cloud Engine:
                 </label>
-                {availableLanguageVoices.length > 0 ? (
-                  <select
-                    value={selectedVoiceURI || voiceInfo.voice?.voiceURI || ''}
-                    onChange={(e) => setSelectedVoiceURI(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl p-2 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  >
-                    {availableLanguageVoices.map((v) => (
-                      <option key={v.voiceURI} value={v.voiceURI}>
-                        {v.name} ({v.lang})
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="bg-white border border-amber-200 rounded-xl p-2 text-amber-800 font-medium">
-                    No matching {LANGUAGE_DISPLAY[language].name} voice found in browser.
+                <div className="bg-white border border-emerald-200 rounded-xl p-2.5 text-emerald-950 font-medium space-y-0.5">
+                  <div className="font-bold text-emerald-800 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Cloud Neural Speech</span>
                   </div>
-                )}
+                  <div className="text-[10px] text-slate-500">
+                    Natural Human Indian Accent ({LANGUAGE_DISPLAY[language].tag})
+                  </div>
+                </div>
               </div>
 
               {/* Speech Speed Buttons */}
@@ -395,46 +375,26 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
                   ))}
                 </div>
                 <span className="text-[10px] text-slate-500 mt-1 block">
-                  {(language === 'te' || language === 'hi') ? '0.85x recommended for clarity' : '1.0x standard'}
+                  {(language === 'te' || language === 'hi') ? '0.85x recommended for farmer clarity' : '1.0x standard pace'}
                 </span>
               </div>
 
-              {/* Pitch & Volume Info */}
+              {/* Security & Modulation Info */}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Audio Modulation:
+                  Security & Audio Quality:
                 </label>
-                <div className="bg-white p-2 rounded-xl border border-slate-200 space-y-1 text-[11px] text-slate-700">
+                <div className="bg-white p-2.5 rounded-xl border border-slate-200 space-y-1 text-[11px] text-slate-700">
                   <div className="flex justify-between">
-                    <span>Pitch:</span>
-                    <span className="font-bold">1.0</span>
+                    <span>Credentials:</span>
+                    <span className="font-bold text-emerald-700">Backend Secured 🔒</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Volume:</span>
-                    <span className="font-bold">1.0 (100%)</span>
+                    <span>Audio Quality:</span>
+                    <span className="font-bold text-emerald-700">High (24kHz MP3)</span>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Voice Unavailable Warning Banner */}
-        {!voiceInfo.isAvailable && (
-          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-amber-950">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-bold">
-                {language === 'te'
-                  ? 'Telugu voice is not available on this device/browser.'
-                  : language === 'hi'
-                  ? 'Hindi voice is not available on this device/browser.'
-                  : 'English voice is not available on this device/browser.'}
-              </p>
-              <p className="text-amber-800 text-[11px] leading-relaxed">
-                {voiceInfo.unavailableMessage ||
-                  'Please install or enable a speech voice package in your Operating System settings (e.g. Windows Language Settings → Add Telugu/Hindi speech, or Android Text-to-Speech settings), or use Google Chrome/Microsoft Edge with Indian TTS enabled.'}
-              </p>
             </div>
           </div>
         )}
@@ -493,8 +453,7 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
                       language={language}
                       mode="speak"
                       speed={speechSpeed}
-                      voiceURI={selectedVoiceURI || undefined}
-                      className="p-1.5 bg-white/80 hover:bg-white text-emerald-900 border border-slate-200 text-[10px] shadow-2xs"
+                      className="p-1.5 bg-white/90 hover:bg-white text-emerald-900 border border-slate-200 text-[10px] shadow-2xs"
                     />
                   )}
                 </div>

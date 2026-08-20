@@ -167,6 +167,28 @@ def test_all():
     login_res = client.post("/api/login", json={"phone": test_phone, "password": "pass12345Password"})
     check("POST /api/login", login_res.status_code == 200 and "access_token" in login_res.json())
 
+    # 17. Cloud Voice Synthesis (Telugu, Hindi, Indian English Neural Audio)
+    voice_te = client.post("/api/voice/synthesize", json={
+        "text": "నమస్కారం రైతు గారు. AgriCare AI మీ వ్యవసాయానికి సహాయం చేస్తుంది.",
+        "language": "te-IN"
+    })
+    check("POST /api/voice/synthesize (Telugu te-IN)", voice_te.status_code == 200 and len(voice_te.content) > 1000)
+
+    voice_hi = client.post("/api/voice/synthesize", json={
+        "text": "नमस्ते किसान जी। AgriCare AI आपकी खेती में सहायता करेगा।",
+        "language": "hi-IN"
+    })
+    check("POST /api/voice/synthesize (Hindi hi-IN)", voice_hi.status_code == 200 and len(voice_hi.content) > 1000)
+
+    voice_en = client.post("/api/voice/synthesize", json={
+        "text": "Hello farmer. AgriCare AI is ready to help you.",
+        "language": "en-IN"
+    })
+    check("POST /api/voice/synthesize (English en-IN)", voice_en.status_code == 200 and len(voice_en.content) > 1000)
+
+    voice_info = client.get("/api/voice/info?language=te-IN")
+    check("GET /api/voice/info", voice_info.status_code == 200 and voice_info.json().get("is_available") is True)
+
     print("========================================")
     print(f"ALL TESTS PASSED: {passed}/{total} (100% Success)")
     print("========================================")

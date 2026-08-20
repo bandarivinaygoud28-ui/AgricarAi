@@ -4,7 +4,7 @@ import base64
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, EmailStr
@@ -31,6 +31,7 @@ from resources.resource_service import (
     get_farmer_bookings
 )
 from location.location_service import search_locations, reverse_geocode, detect_ip_location
+from voice.tts_service import synthesize_speech, get_voice_info
 
 # Initialize database tables and ensure column migrations
 Base.metadata.create_all(bind=engine)
@@ -174,6 +175,11 @@ class AssistantRequest(BaseModel):
     language: Optional[str] = "en"
     diagnosis_context: Optional[Dict[str, Any]] = None
     location: Optional[str] = "Warangal, Telangana"
+
+
+class VoiceSynthesizeRequest(BaseModel):
+    text: str
+    language: Optional[str] = "te-IN"
 
 
 class BookingRequest(BaseModel):
@@ -667,6 +673,49 @@ def chat_with_ai_assistant(req: AssistantRequest):
         diagnosis_context=req.diagnosis_context,
         location=req.location or "Warangal, Telangana"
     )
+
+
+# ============================================================
+# 6.1 CLOUD TEXT-TO-SPEECH (TTS) ENDPOINT (Telugu, Hindi, English)
+# ============================================================
+
+@app.post("/api/voice/synthesize")
+async def synthesize_text_to_speech(req: VoiceSynthesizeRequest):
+    """
+    Cloud Neural Text-to-Speech synthesis for Indian Languages.
+    Supports te-IN (Telugu), hi-IN (Hindi), and en-IN (Indian English).
+    Returns MP3 audio stream.
+    """
+    if not req.text or not req.text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Text for speech synthesis cannot be empty"
+        )
+    try:
+        audio_bytes = await synthesize_speech(
+            text=req.text.strip(),
+            language=req.language or "te-IN"
+        )
+        return Response(
+            content=audio_bytes,
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": "inline; filename=speech.mp3",
+                "Cache-Control": "public, max-age=3600"
+            }
+        )
+    except Exception as e:
+        print(f"Voice synthesis error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Voice service temporarily unavailable. Please try again."
+        )
+
+
+@app.get("/api/voice/info")
+def get_voice_service_info(language: str = Query("te-IN")):
+    """Returns active cloud neural voice metadata for the language."""
+    return get_voice_info(language=language)
 
 
 # ============================================================

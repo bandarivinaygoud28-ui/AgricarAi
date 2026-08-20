@@ -15,7 +15,13 @@ import {
   LanguageCode
 } from '../types';
 
-const API_BASE = 'https://hv2026-0051-vortex-backend.onrender.com/api';
+const LOCAL_API = 'http://localhost:8000/api';
+const REMOTE_API = 'https://hv2026-0051-vortex-backend.onrender.com/api';
+const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? LOCAL_API
+    : REMOTE_API);
 
 function getAuthHeader(): Record<string, string> {
   const token = localStorage.getItem('agricare_token');
@@ -407,6 +413,40 @@ export const api = {
       body: JSON.stringify({ message, language, diagnosis_context, location })
     });
     if (!res.ok) throw new Error('Assistant communication failed');
+    return res.json();
+  },
+
+  // Cloud Text-to-Speech (Telugu, Hindi, Indian English Neural Audio)
+  async synthesizeVoice(text: string, language: string = 'te-IN'): Promise<Blob> {
+    const fetchWithFallback = async (base: string) => {
+      const res = await fetch(`${base}/voice/synthesize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, language })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Voice synthesis failed');
+      }
+      return res.blob();
+    };
+
+    try {
+      return await fetchWithFallback(API_BASE);
+    } catch (primaryErr) {
+      // If primary failed and was localhost, try remote or vice versa
+      const fallbackBase = API_BASE === LOCAL_API ? REMOTE_API : LOCAL_API;
+      try {
+        return await fetchWithFallback(fallbackBase);
+      } catch {
+        throw primaryErr;
+      }
+    }
+  },
+
+  async getVoiceInfo(language: string = 'te-IN'): Promise<{ language: string; voice_name: string; provider: string; is_available: boolean }> {
+    const res = await fetch(`${API_BASE}/voice/info?language=${encodeURIComponent(language)}`);
+    if (!res.ok) throw new Error('Failed to fetch voice info');
     return res.json();
   },
 
