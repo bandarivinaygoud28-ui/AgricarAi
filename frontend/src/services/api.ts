@@ -221,26 +221,6 @@ export const api = {
     return res.json();
   },
 
-  // Voice AI & Cloud Neural Speech
-  async synthesizeVoice(text: string, language: string = 'te-IN', signal?: AbortSignal): Promise<Blob> {
-    const res = await fetch(`${API_BASE}/voice/synthesize`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify({ text, language }),
-      signal
-    });
-    if (!res.ok) {
-      const errDetail = await res.text().catch(() => 'Voice service unavailable');
-      throw new Error(errDetail || 'Voice synthesis service unavailable');
-    }
-    return res.blob();
-  },
-
-  async getVoiceInfo(language: string = 'te-IN'): Promise<any> {
-    const res = await fetch(`${API_BASE}/voice/info?language=${encodeURIComponent(language)}`);
-    if (!res.ok) throw new Error('Failed to get voice info');
-    return res.json();
-  },
 
   // Location & Geocoding
   async searchLocations(query: string): Promise<LocationSearchResult[]> {
@@ -440,12 +420,13 @@ export const api = {
   },
 
   // Cloud Text-to-Speech (Telugu, Hindi, Indian English Neural Audio)
-  async synthesizeVoice(text: string, language: string = 'te-IN'): Promise<Blob> {
+  async synthesizeVoice(text: string, language: string = 'te-IN', signal?: AbortSignal): Promise<Blob> {
     const fetchWithFallback = async (base: string) => {
       const res = await fetch(`${base}/voice/synthesize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, language })
+        body: JSON.stringify({ text, language }),
+        signal
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
