@@ -1,20 +1,25 @@
 import React from 'react';
-import { MarketPriceRecord } from '../types';
-import { ArrowUpDown, ArrowUp, ArrowDown, Navigation } from 'lucide-react';
+import { MarketPriceRecord, LanguageCode } from '../types';
+import { translations } from '../utils/translations';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface MarketPriceTableProps {
   records: MarketPriceRecord[];
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   onSort: (field: string) => void;
+  language?: LanguageCode;
 }
 
 export const MarketPriceTable: React.FC<MarketPriceTableProps> = ({
   records,
   sortBy,
   sortOrder,
-  onSort
+  onSort,
+  language = 'en'
 }) => {
+  const t = translations[language];
+
   const getSortIcon = (field: string) => {
     if (sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-slate-300" />;
     return sortOrder === 'asc' ? (
@@ -27,7 +32,7 @@ export const MarketPriceTable: React.FC<MarketPriceTableProps> = ({
   if (records.length === 0) {
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-500 shadow-card">
-        <p className="text-sm font-semibold">No market price records found for this filter.</p>
+        <p className="text-sm font-semibold">{t.noMarketData || 'No market price records found for this filter.'}</p>
       </div>
     );
   }
@@ -40,46 +45,46 @@ export const MarketPriceTable: React.FC<MarketPriceTableProps> = ({
             <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-extrabold uppercase tracking-wider">
               <th className="py-3.5 px-4 cursor-pointer hover:bg-slate-100" onClick={() => onSort('commodity')}>
                 <div className="flex items-center gap-1.5">
-                  <span>Commodity</span>
+                  <span>{t.commodity || 'Commodity'}</span>
                   {getSortIcon('commodity')}
                 </div>
               </th>
               <th className="py-3.5 px-4 cursor-pointer hover:bg-slate-100" onClick={() => onSort('market')}>
                 <div className="flex items-center gap-1.5">
-                  <span>Market (APMC)</span>
+                  <span>{t.marketApmc || 'Market (APMC)'}</span>
                   {getSortIcon('market')}
                 </div>
               </th>
               <th className="py-3.5 px-4 cursor-pointer hover:bg-slate-100" onClick={() => onSort('district')}>
                 <div className="flex items-center gap-1.5">
-                  <span>District & State</span>
+                  <span>{t.districtState || 'District & State'}</span>
                   {getSortIcon('district')}
                 </div>
               </th>
               <th className="py-3.5 px-4 text-right cursor-pointer hover:bg-slate-100" onClick={() => onSort('min_price')}>
                 <div className="flex items-center justify-end gap-1.5">
-                  <span>Min Price</span>
+                  <span>{t.minPrice || 'Min Price'}</span>
                   {getSortIcon('min_price')}
                 </div>
               </th>
               <th className="py-3.5 px-4 text-right cursor-pointer hover:bg-slate-100" onClick={() => onSort('max_price')}>
                 <div className="flex items-center justify-end gap-1.5">
-                  <span>Max Price</span>
+                  <span>{t.maxPrice || 'Max Price'}</span>
                   {getSortIcon('max_price')}
                 </div>
               </th>
               <th className="py-3.5 px-4 text-right cursor-pointer hover:bg-slate-100" onClick={() => onSort('modal_price')}>
                 <div className="flex items-center justify-end gap-1.5">
-                  <span>Modal Price (₹/Qtl)</span>
+                  <span>{t.modalPrice || 'Modal Price'} (₹/Qtl)</span>
                   {getSortIcon('modal_price')}
                 </div>
               </th>
               <th className="py-3.5 px-4 text-right">
-                <span>Wholesale (₹/kg)</span>
+                <span>{t.wholesaleApprox || 'Wholesale'} (₹/kg)</span>
               </th>
               <th className="py-3.5 px-4 text-center cursor-pointer hover:bg-slate-100" onClick={() => onSort('arrival_date')}>
                 <div className="flex items-center justify-center gap-1.5">
-                  <span>Arrival Date</span>
+                  <span>{t.arrivalDate || 'Arrival Date'}</span>
                   {getSortIcon('arrival_date')}
                 </div>
               </th>
@@ -101,13 +106,12 @@ export const MarketPriceTable: React.FC<MarketPriceTableProps> = ({
                       )}
                     </div>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-900 font-bold">
-                    <div className="flex items-center gap-1.5">
+                  <td className="py-3.5 px-4 font-bold text-slate-800">
+                    <div>
                       <span>{r.market}</span>
                       {r.distance_km !== undefined && r.distance_km !== null && (
-                        <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                          <Navigation className="w-2 h-2" />
-                          {r.distance_km}km
+                        <span className="block text-[10px] text-emerald-700 font-extrabold">
+                          🚗 {r.formatted_distance || `${r.distance_km} km ${t.byRoad || 'by road'}`}
                         </span>
                       )}
                     </div>
@@ -115,19 +119,19 @@ export const MarketPriceTable: React.FC<MarketPriceTableProps> = ({
                   <td className="py-3.5 px-4 text-slate-600 font-medium">
                     {r.district}, {r.state}
                   </td>
-                  <td className="py-3.5 px-4 text-right font-medium text-slate-600">
+                  <td className="py-3.5 px-4 text-right font-bold text-slate-700">
                     ₹{r.min_price?.toLocaleString()}
                   </td>
-                  <td className="py-3.5 px-4 text-right font-medium text-slate-600">
+                  <td className="py-3.5 px-4 text-right font-bold text-slate-700">
                     ₹{r.max_price?.toLocaleString()}
                   </td>
-                  <td className="py-3.5 px-4 text-right font-black text-emerald-700 text-sm">
+                  <td className="py-3.5 px-4 text-right font-black text-emerald-800 text-sm">
                     ₹{r.modal_price?.toLocaleString()}
                   </td>
-                  <td className="py-3.5 px-4 text-right font-black text-emerald-800">
-                    ₹{priceKg}/kg
+                  <td className="py-3.5 px-4 text-right font-black text-emerald-950">
+                    ₹{priceKg}
                   </td>
-                  <td className="py-3.5 px-4 text-center text-slate-500 font-medium">
+                  <td className="py-3.5 px-4 text-center text-slate-500 font-semibold">
                     {r.arrival_date}
                   </td>
                 </tr>

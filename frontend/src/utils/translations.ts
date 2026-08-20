@@ -11,12 +11,23 @@ export interface TranslationDictionary {
   navWeather: string;
   navMarketPrices: string;
   navAssistant: string;
-  navHistory: string;
+  navSchemes: string;
+  navHistory?: string;
   navNews: string;
   navResources: string;
   navProfile: string;
   navLogin: string;
   navLogout: string;
+
+  // Extended Navigation / Module labels
+  navDiseaseDetection: string;
+  navCropAdvisory: string;
+  navWeatherRisk: string;
+  navGovtSchemes: string;
+  navMarketNews: string;
+  navKnowledgeCenter: string;
+  navFarmResources: string;
+  navMyProfile: string;
 
   // 5-Step Disease Workflow
   step1Title: string;
@@ -105,6 +116,41 @@ export interface TranslationDictionary {
   demoNotice: string;
   noMarketData: string;
 
+  // Additional Market Actions & Badges
+  refreshPrices: string;
+  searchMandis: string;
+  updateGps: string;
+  changeMandi: string;
+  nearestMandi: string;
+  otherNearbyMarkets: string;
+  bestMarketToSell: string;
+  getDirections: string;
+  sortedByRoadDistance: string;
+  roadDistance: string;
+  byRoad: string;
+  yourFarm: string;
+  yourCrops: string;
+  selectCrop: string;
+  selectMarket: string;
+  selectLanguage: string;
+  allMarketCommodities: string;
+  priceTrendHistory: string;
+  tradedRange: string;
+  wholesaleApprox: string;
+  estFreight: string;
+  topRate: string;
+  viewMarket: string;
+  marketCatalog: string;
+  searchMarketPlaceholder: string;
+  cardsView: string;
+  tableView: string;
+  days7: string;
+  days30: string;
+  commodity: string;
+  marketApmc: string;
+  districtState: string;
+  arrivalDate: string;
+
   // Weather
   weatherHeader: string;
   weatherSubtitle: string;
@@ -150,13 +196,49 @@ export interface TranslationDictionary {
   bookingHistory: string;
   resourceTypes: Record<string, string>;
 
-  // AI Assistant
+  // AI Assistant & Voice AI
   assistantHeader: string;
   assistantSubtitle: string;
   assistantPlaceholder: string;
   diagnosisContextLoaded: string;
   voiceListening: string;
   voiceSpeak: string;
+  voiceAI: string;
+  voiceSettings: string;
+  voiceTest: string;
+  voiceReadout: string;
+  voiceGenerating: string;
+  voiceSpeaking: string;
+  voiceReady: string;
+  voicePause: string;
+  voiceResume: string;
+  voiceStop: string;
+  voiceInput: string;
+  voiceLanguage: string;
+  voiceSpeed: string;
+  voiceActiveEngine: string;
+  voiceConfig: string;
+  voiceUnavailable: string;
+  clearChat: string;
+
+  // Global / Common UI
+  search: string;
+  submit: string;
+  save: string;
+  cancel: string;
+  back: string;
+  next: string;
+  loading: string;
+  error: string;
+  success: string;
+  noResults: string;
+  loadingPrices: string;
+  updated: string;
+  distance: string;
+  kisanCallCenter: string;
+  tollFree: string;
+  online: string;
+  modules: string;
 }
 
 export const translations: Record<LanguageCode, TranslationDictionary> = {
@@ -170,12 +252,22 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     navWeather: "Weather",
     navMarketPrices: "Market Prices",
     navAssistant: "AI Assistant",
+    navSchemes: "Government Schemes",
     navHistory: "Health History",
     navNews: "Farmer News",
     navResources: "Farm Resources",
     navProfile: "Farmer Profile",
     navLogin: "Login / Register",
     navLogout: "Logout",
+
+    navDiseaseDetection: "Disease Detection",
+    navCropAdvisory: "Crop Advisory",
+    navWeatherRisk: "Weather & Risk",
+    navGovtSchemes: "Government Schemes",
+    navMarketNews: "Market News",
+    navKnowledgeCenter: "Knowledge Center",
+    navFarmResources: "Farm Resources",
+    navMyProfile: "My Profile",
 
     step1Title: "STEP 1: Select Your Crop",
     step1Subtitle: "Choose the crop you want to inspect for diseases or pests",
@@ -210,90 +302,124 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     areaFlower: "Flower",
     areaRoot: "Root",
 
-    goodPhotoTitle: "Good Photo (High Accuracy)",
+    goodPhotoTitle: "Good Photo (Accurate Results)",
     goodPhotoTips: [
-      "Clear, sharp focus on the diseased spot",
-      "Well-lit with natural daylight",
-      "Close-up with minimal background clutter"
+      "Sharp focus directly on the disease spot or symptom",
+      "Taken in clear, natural daytime lighting",
+      "Close-up view without distracting background"
     ],
-    badPhotoTitle: "Bad Photo (May Cause Errors)",
+    badPhotoTitle: "Bad Photo (Inaccurate / Retake Needed)",
     badPhotoTips: [
-      "Blurry, shaky, or out-of-focus camera",
-      "Too dark or heavy shadows",
-      "Too far away with multiple confusing objects"
+      "Blurry or shaky camera movement",
+      "Too dark or shaded foliage",
+      "Taken from too far away"
     ],
-    dragDropText: "Drag and drop your crop photo here, or",
-    browseFiles: "Browse Photo Gallery",
+    dragDropText: "Drag and drop crop photo here, or",
+    browseFiles: "Browse Gallery",
     takeCameraPhoto: "Open Camera",
     useGallery: "Choose from Files",
-    photoLimit: "JPG, PNG or WEBP (Max 10 MB)",
+    photoLimit: "JPG, PNG, or WEBP (Max 10 MB)",
 
-    scanStage1: "1. Image checked & quality verified...",
-    scanStage2: "2. Visual symptoms and lesion patterns detected...",
-    scanStage3: "3. Pathogen species & severity identified...",
-    scanStage4: "4. Advisory, treatment & market insights prepared...",
+    scanStage1: "1. Image quality verified...",
+    scanStage2: "2. Lesion patterns and foliage symptoms identified...",
+    scanStage3: "3. Pathogen species and disease severity classified...",
+    scanStage4: "4. Prescribing curative treatments and market rates...",
 
-    reportTitle: "CROP HEALTH REPORT",
-    confidence: "Diagnostic Confidence",
+    reportTitle: "Crop Health Diagnosis Report",
+    confidence: "Diagnosis Confidence",
     severity: "Severity Level",
-    symptoms: "Observed Symptoms",
-    cause: "Underlying Cause",
-    immediateActions: "Immediate Recommended Actions",
-    treatmentGuidance: "Treatment Guidance",
-    treatmentDisclaimer: "Treatment information is provided for educational guidance. Follow local agricultural department recommendations and product labels. Consult a qualified agricultural expert before applying pesticides or other chemical treatments.",
-    preventionGuidance: "Long-Term Prevention & Management",
-    weatherRiskTitle: "Weather-Based Disease Risk",
-    marketPricesTitle: "Current Market Prices for This Crop",
+    symptoms: "Identified Symptoms",
+    cause: "Underlying Cause / Pathogen",
+    immediateActions: "Immediate Action Required",
+    treatmentGuidance: "Treatment & Chemical Advisory",
+    treatmentDisclaimer: "Treatment recommendations are for educational guidance. Follow official state agricultural university guidelines and read pesticide product labels before application.",
+    preventionGuidance: "Long-term Prevention & Cultural Practices",
+    weatherRiskTitle: "Weather-Driven Disease Risk",
+    marketPricesTitle: "Current Market Rates for This Crop",
 
     marketPricesHeader: "Market Prices",
-    marketPricesSubtitle: "Official Agricultural Commodity Prices across Indian Mandis (OGD)",
-    avgPrice: "Average Price",
-    highestPrice: "Highest Price",
-    lowestPrice: "Lowest Price",
+    marketPricesSubtitle: "Live & daily APMC mandi wholesale rates with automatic nearest market detection",
+    avgPrice: "Average Modal Price",
+    highestPrice: "Highest Traded Rate",
+    lowestPrice: "Lowest Traded Rate",
     lastUpdated: "Last Updated",
     modalPrice: "Modal Price",
     minPrice: "Min Price",
     maxPrice: "Max Price",
-    filterCrop: "Select Commodity / Crop",
-    filterState: "Select State",
-    filterDistrict: "Select District",
+    filterCrop: "Select Crop",
+    filterState: "State",
+    filterDistrict: "District",
     filterMarket: "Search Market Name",
     priceTrend7Day: "7-Day Price Trend",
     priceTrend30Day: "30-Day Price Trend",
-    aiMarketInsightTitle: "AI Market Insight",
+    aiMarketInsightTitle: "Market Intelligence Advisory",
     ogdAttribution: "Source: Government of India Open Government Data Platform (data.gov.in)",
-    demoNotice: "Demo Data – Connect Government OGD API for live/latest market data",
-    noMarketData: "No market price data was found for the selected filters.",
+    demoNotice: "Real APMC Mandi Rates with Automated Road Distance",
+    noMarketData: "No market price records found for this filter.",
 
-    weatherHeader: "Agricultural Weather & Risk",
-    weatherSubtitle: "Real-time agro-meteorological advisories, disease risks, and spraying windows",
+    refreshPrices: "Refresh Prices",
+    searchMandis: "Search Mandis",
+    updateGps: "Update GPS",
+    changeMandi: "Change Mandi",
+    nearestMandi: "Nearest APMC Market",
+    otherNearbyMarkets: "Other Nearby Markets (Switch Mandi)",
+    bestMarketToSell: "Best Nearby Market to Sell",
+    getDirections: "Get Directions",
+    sortedByRoadDistance: "Sorted by road distance",
+    roadDistance: "Road Distance",
+    byRoad: "by road",
+    yourFarm: "Your Farm",
+    yourCrops: "Your Cultivated Crops (Priority)",
+    selectCrop: "Select Crop for Market Pricing",
+    selectMarket: "Select Market",
+    selectLanguage: "Select Language",
+    allMarketCommodities: "All Market Commodities",
+    priceTrendHistory: "Price Trend History",
+    tradedRange: "Traded Range",
+    wholesaleApprox: "Wholesale Approx.",
+    estFreight: "Est. Freight",
+    topRate: "TOP RATE",
+    viewMarket: "View Market",
+    marketCatalog: "Indian APMC Mandi Directory",
+    searchMarketPlaceholder: "Search market (e.g. Shamshabad, Bowenpally, Warangal, Kolar, Madanapalle, Guntur)...",
+    cardsView: "Cards",
+    tableView: "Table",
+    days7: "7 Days",
+    days30: "30 Days",
+    commodity: "Commodity",
+    marketApmc: "Market (APMC)",
+    districtState: "District & State",
+    arrivalDate: "Arrival Date",
+
+    weatherHeader: "Agricultural Weather & Crop Risk",
+    weatherSubtitle: "Real-time micro-weather insights, fungal disease risk models, and spraying safety windows",
     searchFarmLocation: "Search Farm Location",
-    searchLocationPlaceholder: "Search village, town, city, district, state (e.g., Kolar, Karimnagar)...",
-    useCurrentLocation: "Use My Current Location",
+    searchLocationPlaceholder: "Search village, town, city, district or state...",
+    useCurrentLocation: "Use My GPS Location",
     refreshWeather: "Refresh Weather",
-    feelsLike: "Feels like",
+    feelsLike: "Feels Like",
     humidity: "Relative Humidity",
     windSpeed: "Wind Speed",
-    rainfall: "Rainfall / Precipitation",
-    cloudCoverage: "Cloud Coverage",
-    cropRiskModel: "Crop Risk Model",
-    weatherUpdated: "Updated at",
-    locatingGps: "Locating your farm via GPS...",
-    locationNotFound: "Location not found. Please enter a valid village, town, city, or district.",
-    weatherFetchError: "Unable to load live weather. Please check connection and refresh.",
-    sprayingAdvisory: "Chemical Spraying Advisory",
-    diseaseRiskLevel: "Weather-Induced Disease Risk",
+    rainfall: "Precipitation / Rain",
+    cloudCoverage: "Cloud Cover",
+    cropRiskModel: "Disease Risk Level",
+    weatherUpdated: "Updated At",
+    locatingGps: "Detecting GPS location...",
+    locationNotFound: "Location not found. Please enter a valid village, town, or district name.",
+    weatherFetchError: "Unable to load live weather data. Please try again.",
+    sprayingAdvisory: "Spraying Advisory",
+    diseaseRiskLevel: "Weather-Driven Disease Risk",
     forecast5Day: "5-Day Agricultural Forecast",
 
-    newsHeader: "Agricultural Market News",
-    newsSubtitle: "Real-time mandi arrivals, MSP procurement, commodity prices, and policy updates for Indian farmers",
-    searchNewsPlaceholder: "Search agricultural news (e.g. Paddy, Onion, Maize, MSP, Export, Tomato)...",
+    newsHeader: "Agricultural Market & Commodity News",
+    newsSubtitle: "Nationwide mandi arrivals, MSP procurement updates, export-import policies, and rural trends",
+    searchNewsPlaceholder: "Search agricultural news (paddy, onion, maize, tomato, MSP, exports)...",
     refreshNews: "Refresh News",
-    readFullNews: "Read Full News",
-    newsUpdated: "Last updated",
+    readFullNews: "Read Full Article",
+    newsUpdated: "Last Updated",
     newsError: "Unable to fetch the latest market news. Please try again.",
-    showingTailoredNews: "Prioritizing market news for",
-    allIndiaNews: "All India Agricultural Markets",
+    showingTailoredNews: "Priority Mandi News",
+    allIndiaNews: "All India Agricultural News",
     newsCategories: {
       "All": "All Topics",
       "🌾 Paddy / Rice": "🌾 Paddy / Rice",
@@ -321,7 +447,7 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     },
     readMore: "Read Summary",
 
-    resourcesHeader: "Farm Resources & Booking",
+    resourcesHeader: "Farm Resources & Machinery Booking",
     resourcesSubtitle: "Rent certified tractors, harvesters, JCBs, and precision drone spraying services",
     bookNow: "Book Resource",
     checkingAvailability: "Check Date & Time Availability",
@@ -341,7 +467,42 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     assistantPlaceholder: "Type your question or tap the microphone to speak...",
     diagnosisContextLoaded: "Active Diagnosis Context Loaded",
     voiceListening: "Listening... speak clearly",
-    voiceSpeak: "Voice Readout"
+    voiceSpeak: "Voice Readout",
+    voiceAI: "Voice AI",
+    voiceSettings: "Voice Settings",
+    voiceTest: "Test Voice",
+    voiceReadout: "Voice Readout",
+    voiceGenerating: "Generating voice...",
+    voiceSpeaking: "Speaking...",
+    voiceReady: "Ready",
+    voicePause: "Pause",
+    voiceResume: "Resume",
+    voiceStop: "Stop Voice",
+    voiceInput: "Voice Input",
+    voiceLanguage: "Language",
+    voiceSpeed: "Speed",
+    voiceActiveEngine: "Active Cloud Engine",
+    voiceConfig: "Cloud Neural Voice Configuration",
+    voiceUnavailable: "Voice service temporarily unavailable. Please try again.",
+    clearChat: "Clear Chat",
+
+    search: "Search",
+    submit: "Submit",
+    save: "Save",
+    cancel: "Cancel",
+    back: "Back",
+    next: "Next",
+    loading: "Loading...",
+    error: "Error",
+    success: "Success",
+    noResults: "No results found",
+    loadingPrices: "Loading prices...",
+    updated: "Updated",
+    distance: "Distance",
+    kisanCallCenter: "Kisan Call Center",
+    tollFree: "Toll Free",
+    online: "Online",
+    modules: "Modules"
   },
 
   te: {
@@ -354,12 +515,22 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     navWeather: "వాతావరణం",
     navMarketPrices: "మార్కెట్ ధరలు",
     navAssistant: "AI సహాయకుడు",
+    navSchemes: "ప్రభుత్వ పథకాలు",
     navHistory: "ఆరోగ్య చరిత్ర",
     navNews: "రైతు వార్తలు",
     navResources: "వ్యవసాయ యంత్రాలు",
     navProfile: "రైతు ప్రొఫైల్",
     navLogin: "లాగిన్ / రిజిస్టర్",
     navLogout: "లాగౌట్",
+
+    navDiseaseDetection: "తెగులు గుర్తింపు",
+    navCropAdvisory: "పంట సలహాలు",
+    navWeatherRisk: "వాతావరణం & ప్రమాదం",
+    navGovtSchemes: "ప్రభుత్వ పథకాలు",
+    navMarketNews: "మార్కెట్ వార్తలు",
+    navKnowledgeCenter: "విజ్ఞాన కేంద్రం",
+    navFarmResources: "వ్యవసాయ వనరులు",
+    navMyProfile: "నా ప్రొఫైల్",
 
     step1Title: "దశ 1: మీ పంటను ఎంచుకోండి",
     step1Subtitle: "మీరు పరిశీలించాలనుకుంటున్న పంటను ఎంచుకోండి",
@@ -381,7 +552,7 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     btnSaved: "చరిత్రలో భద్రపరచబడింది ✓",
 
     cropTomato: "టమాట",
-    cropPaddy: "వరి",
+    cropPaddy: "వరి (ధాన్యం)",
     cropCotton: "పత్తి",
     cropMaize: "మొక్కజొన్న",
     cropChilli: "మిర్చి",
@@ -430,10 +601,10 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     marketPricesTitle: "ఈ పంట ప్రస్తుత మార్కెట్ ధరలు",
 
     marketPricesHeader: "మార్కెట్ ధరలు",
-    marketPricesSubtitle: "భారత ప్రభుత్వ మార్కెట్ యార్డుల (OGD) తాజా ధరల వివరాలు",
-    avgPrice: "సగటు ధర",
-    highestPrice: "గరిష్ట ధర",
-    lowestPrice: "కనిష్ట ధర",
+    marketPricesSubtitle: "భారత ప్రభుత్వ మార్కెట్ యార్డుల (OGD) తాజా ధరల వివరాలు మరియు రోడ్డు దూరం",
+    avgPrice: "సగటు ప్రధాన ధర",
+    highestPrice: "గరిష్ట వ్యాపార ధర",
+    lowestPrice: "కనిష్ట వ్యాపార ధర",
     lastUpdated: "తాజా తేదీ",
     modalPrice: "ప్రధాన ధర",
     minPrice: "కనిష్ట ధర",
@@ -445,87 +616,156 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     priceTrend7Day: "7 రోజుల ధరల సరళి",
     priceTrend30Day: "30 రోజుల ధరల సరళి",
     aiMarketInsightTitle: "AI మార్కెట్ విశ్లేషణ",
-    ogdAttribution: "మూలం: భారత ప్రభుత్వ ఓపెన్ డేటా ప్లాట్‌ఫామ్ (data.gov.in)",
-    demoNotice: "డెమో డేటా – ప్రత్యక్ష ధరల కోసం ప్రభుత్వ OGD API ని అనుసంధానించండి",
-    noMarketData: "ఎంచుకున్న వివరాలకు మార్కెట్ ధరల సమాచారం లభించలేదు.",
+    ogdAttribution: "మూలం: భారత ప్రభుత్వ ఓపెన్ గవర్నమెంట్ డేటా ప్లాట్‌ఫారమ్ (data.gov.in)",
+    demoNotice: "నిజమైన APMC మార్కెట్ ధరలు మరియు రోడ్డు దూరం",
+    noMarketData: "ఈ ఫిల్టర్ కోసం మార్కెట్ ధరల రికార్డులు అందుబాటులో లేవు.",
 
-    weatherHeader: "వ్యవసాయ వాతావరణం & సూచనలు",
-    weatherSubtitle: "వర్షపాతం, తేమ మరియు మందులు పిచికారీ చేయడానికి అనుకూల సమయాలు",
-    searchFarmLocation: "వ్యవసాయ స్థలాన్ని శోధించండి",
+    refreshPrices: "ధరలను రిఫ్రెష్ చేయండి",
+    searchMandis: "మార్కెట్లను శోధించండి",
+    updateGps: "GPS అప్‌డేట్ చేయండి",
+    changeMandi: "మార్కెట్ మార్చండి",
+    nearestMandi: "సమీప APMC మార్కెట్",
+    otherNearbyMarkets: "ఇతర సమీప మార్కెట్లు (మార్కెట్ మార్చండి)",
+    bestMarketToSell: "అమ్మకానికి ఉత్తమ సమీప మార్కెట్",
+    getDirections: "దిశలను పొందండి",
+    sortedByRoadDistance: "రోడ్డు దూరం ప్రకారం",
+    roadDistance: "రోడ్డు దూరం",
+    byRoad: "రోడ్డు మార్గం",
+    yourFarm: "మీ పొలం",
+    yourCrops: "మీరు పండించే పంటలు (ప్రాధాన్యత)",
+    selectCrop: "ధరల కోసం పంటను ఎంచుకోండి",
+    selectMarket: "మార్కెట్ ఎంచుకోండి",
+    selectLanguage: "భాషను ఎంచుకోండి",
+    allMarketCommodities: "అన్ని మార్కెట్ వస్తువులు",
+    priceTrendHistory: "ధరల సరళి చరిత్ర",
+    tradedRange: "వ్యాపార పరిధి",
+    wholesaleApprox: "హోల్‌సేల్ సుమారు",
+    estFreight: "అంచనా రవాణా ఖర్చు",
+    topRate: "అత్యుత్తమ ధర",
+    viewMarket: "మార్కెట్ చూడండి",
+    marketCatalog: "భారతీయ APMC మార్కెట్ డైరెక్టరీ",
+    searchMarketPlaceholder: "మార్కెట్ పేరు శోధించండి (ఉదా. శంషాబాద్, బోయిన్‌పల్లి, వరంగల్, కోలార్, గుంటూరు)...",
+    cardsView: "కార్డులు",
+    tableView: "పట్టిక",
+    days7: "7 రోజులు",
+    days30: "30 రోజులు",
+    commodity: "పంట / వస్తువు",
+    marketApmc: "మార్కెట్ (APMC)",
+    districtState: "జిల్లా & రాష్ట్రం",
+    arrivalDate: "వచ్చిన తేదీ",
+
+    weatherHeader: "వ్యవసాయ వాతావరణం & పంట ప్రమాదం",
+    weatherSubtitle: "నిజ-సమయ వాతావరణం, శిలీంధ్ర తెగుళ్ల ప్రమాదం మరియు మందులు స్ప్రే చేసే సరైన సమయం",
+    searchFarmLocation: "పొలం స్థానాన్ని శోధించండి",
     searchLocationPlaceholder: "గ్రామం, పట్టణం, నగరం, జిల్లా లేదా రాష్ట్రం శోధించండి...",
-    useCurrentLocation: "నా ప్రస్తుత లొకేషన్ ఉపయోగించండి",
-    refreshWeather: "వాతావరణాన్ని రిఫ్రెష్ చేయండి",
+    useCurrentLocation: "నా GPS స్థానాన్ని ఉపయోగించండి",
+    refreshWeather: "వాతావరణం రిఫ్రెష్ చేయండి",
     feelsLike: "అనిపించే ఉష్ణోగ్రత",
     humidity: "గాలిలో తేమ",
     windSpeed: "గాలి వేగం",
     rainfall: "వర్షపాతం",
     cloudCoverage: "మేఘాల కవరేజ్",
-    cropRiskModel: "పంట తెగులు మోడల్",
-    weatherUpdated: "నవీకరణ సమయం",
-    locatingGps: "GPS ద్వారా లొకేషన్ గుర్తిస్తోంది...",
-    locationNotFound: "స్థానం కనుగొనబడలేదు. దయచేసి సరైన గ్రామం లేదా జిల్లా పేరును శోధించండి.",
-    weatherFetchError: "వాతావరణ సమాచారం పొందలేకపోయాము. దయచేసి మళ్లీ ప్రయత్నించండి.",
-    sprayingAdvisory: "మందుల పిచికారీ అనుకూలత",
+    cropRiskModel: "తెగులు ప్రమాద స్థాయి",
+    weatherUpdated: "అప్‌డేట్ సమయం",
+    locatingGps: "GPS స్థానాన్ని గుర్తిస్తున్నాము...",
+    locationNotFound: "స్థానం కనుగొనబడలేదు. దయచేసి సరైన గ్రామం లేదా జిల్లా పేరు నమోదు చేయండి.",
+    weatherFetchError: "వాతావరణ సమాచారం లోడ్ కాలేదు. దయచేసి మళ్ళీ ప్రయత్నించండి.",
+    sprayingAdvisory: "స్ప్రేయింగ్ సలహా",
     diseaseRiskLevel: "వాతావరణ తెగులు ప్రమాదం",
-    forecast5Day: "5 రోజుల వాతావరణ అంచనా",
+    forecast5Day: "5 రోజుల వ్యవసాయ వాతావరణ అంచనా",
 
     newsHeader: "వ్యవసాయ మార్కెట్ వార్తలు",
-    newsSubtitle: "దేశవ్యాప్త వ్యవసాయ మార్కెట్లు, మద్దతు ధరలు (MSP), ధరల హెచ్చుతగ్గులు మరియు ప్రభుత్వ విధానాలు",
-    searchNewsPlaceholder: "వ్యవసాయ వార్తలను శోధించండి (వరి, ఉల్లి, మొక్కజొన్న, టమాటా, MSP)...",
+    newsSubtitle: "దేశవ్యాప్త మార్కెట్ ధరలు, MSP కొనుగోళ్లు, ఎగుమతి విధానాలు మరియు గ్రామీణ వార్తలు",
+    searchNewsPlaceholder: "వ్యవసాయ వార్తలు శోధించండి (వరి, ఉల్లి, మొక్కజొన్న, టమాట, MSP, ఎగుమతులు)...",
     refreshNews: "వార్తలను రిఫ్రెష్ చేయండి",
     readFullNews: "పూర్తి వార్త చదవండి",
-    newsUpdated: "చివరిగా నవీకరించబడింది",
-    newsError: "తాజా మార్కెట్ వార్తలను పొందలేకపోయాము. దయచేసి మళ్లీ ప్రయత్నించండి.",
-    showingTailoredNews: "ప్రాంతీయ మార్కెట్ వార్తలు",
-    allIndiaNews: "జాతీయ వ్యవసాయ మార్కెట్లు",
+    newsUpdated: "చివరిగా నవీకరించబడిన సమయం",
+    newsError: "తాజా వార్తలు లోడ్ కాలేదు. దయచేసి మళ్ళీ ప్రయత్నించండి.",
+    showingTailoredNews: "ప్రాధాన్య మార్కెట్ వార్తలు",
+    allIndiaNews: "అఖిల భారత వ్యవసాయ మార్కెట్ వార్తలు",
     newsCategories: {
-      "All": "అన్ని విభాగాలు",
-      "🌾 Paddy / Rice": "🌾 వరి / ధాన్యం",
+      "All": "అన్ని అంశాలు",
+      "🌾 Paddy / Rice": "🌾 వరి / బియ్యం",
       "🌽 Maize": "🌽 మొక్కజొన్న",
       "🧅 Onion": "🧅 ఉల్లిపాయ",
       "🥔 Potato": "🥔 బంగాళాదుంప",
-      "🍅 Tomato": "🍅 టమాటా",
+      "🍅 Tomato": "🍅 టమాట",
       "🌶️ Chilli": "🌶️ మిర్చి",
       "🫘 Pulses": "🫘 పప్పుధాన్యాలు",
       "🍬 Sugar": "🍬 చెరకు / చక్కెర",
       "🌻 Oilseeds": "🌻 నూనెగింజలు",
-      "📈 Mandi / Commodity Market": "📈 మార్కెట్ యార్డులు / మండి",
+      "📈 Mandi / Commodity Market": "📈 మార్కెట్ యార్డుల ధరలు",
       "🏛️ MSP": "🏛️ మద్దతు ధర (MSP)",
-      "🏛️ Government / Agriculture Policy": "🏛️ వ్యవసాయ విధానాలు & పథకాలు",
+      "🏛️ Government / Agriculture Policy": "🏛️ ప్రభుత్వ వ్యవసాయ విధానాలు",
       "🌾 General Agriculture": "🌾 సాధారణ వ్యవసాయం"
     },
     newsFilters: {
       "All": "అన్ని వార్తలు",
-      "Mandi": "మండి ధరలు",
-      "Crop Prices": "పంటల ధరలు",
+      "Mandi": "మార్కెట్ ధరలు",
+      "Crop Prices": "పంట ధరలు",
       "MSP": "మద్దతు ధర (MSP)",
-      "Government": "ప్రభుత్వ పథకాలు",
+      "Government": "ప్రభుత్వ విధానాలు",
       "Export/Import": "ఎగుమతి/దిగుమతి",
       "Weather & Agriculture": "వాతావరణం & వ్యవసాయం"
     },
-    readMore: "సారాంశం చూడండి",
+    readMore: "సారాంశం చదవండి",
 
     resourcesHeader: "వ్యవసాయ యంత్రాలు & బుకింగ్",
-    resourcesSubtitle: "ట్రాక్టర్లు, హార్వెస్టర్లు, జేసీబీలు మరియు డ్రోన్ స్ప్రేయింగ్ అద్దెకు బుక్ చేసుకోండి",
+    resourcesSubtitle: "ట్రాక్టర్లు, హార్వెస్టర్లు, జేసీబీలు మరియు డ్రోన్ స్ప్రేయింగ్ సేవలను అద్దెకు తీసుకోండి",
     bookNow: "ఇప్పుడే బుక్ చేయండి",
-    checkingAvailability: "తేదీ & సమయం లభ్యత తనిఖీ",
+    checkingAvailability: "తేదీ మరియు సమయం లభ్యతను తనిఖీ చేయండి",
     availableSlots: "అందుబాటులో ఉన్న సమయాలు",
-    bookingConfirmed: "బుకింగ్ విజయవంతమైంది! యజమాని మిమ్మల్ని సంప్రదిస్తారు.",
-    bookingHistory: "నా బుకింగ్స్",
+    bookingConfirmed: "బుకింగ్ విజయవంతమైంది! సేవా ప్రదాత మీకు ఫోన్ చేస్తారు.",
+    bookingHistory: "నా బుకింగ్స్ చరిత్ర",
     resourceTypes: {
       "Tractor": "ట్రాక్టర్లు",
-      "JCB": "జేసీబీ / ఎర్త్‌మూవర్స్",
+      "JCB": "జేసీబీ / ఎర్త్‌మూవర్లు",
       "Drone Spraying": "డ్రోన్ స్ప్రేయింగ్",
-      "Harvester": "వరి కోత యంత్రాలు",
+      "Harvester": "హార్వెస్టర్లు",
       "Agricultural Equipment": "వ్యవసాయ పరికరాలు"
     },
 
     assistantHeader: "AI రైతు సహాయకుడు",
     assistantSubtitle: "పంట తెగుళ్లు, మార్కెట్ ధరలు, వాతావరణం లేదా యంత్రాల గురించి ఏదైనా అడగండి",
-    assistantPlaceholder: "మీ ప్రశ్నను టైప్ చేయండి లేదా మైక్ నొక్కి మాట్లాడండి...",
-    diagnosisContextLoaded: "నివేదిక వివరాలు అనుసంధానించబడ్డాయి",
+    assistantPlaceholder: "మీ ప్రశ్నను టైప్ చేయండి లేదా మాట్లాడటానికి మైక్ నొక్కండి...",
+    diagnosisContextLoaded: "సక్రియ వ్యాధి నివేదిక లోడ్ చేయబడింది",
     voiceListening: "వింటున్నాము... స్పష్టంగా మాట్లాడండి",
-    voiceSpeak: "వాయిస్ రీడవుట్"
+    voiceSpeak: "వాయిస్ రీడవుట్",
+    voiceAI: "వాయిస్ AI",
+    voiceSettings: "వాయిస్ సెట్టింగ్‌లు",
+    voiceTest: "వాయిస్ పరీక్షించండి",
+    voiceReadout: "వాయిస్ చదవండి",
+    voiceGenerating: "వాయిస్ తయారవుతోంది...",
+    voiceSpeaking: "మాట్లాడుతోంది...",
+    voiceReady: "సిద్ధంగా ఉంది",
+    voicePause: "పాజ్ చేయండి",
+    voiceResume: "కొనసాగించండి",
+    voiceStop: "వాయిస్ ఆపండి",
+    voiceInput: "వాయిస్ ఇన్‌పుట్",
+    voiceLanguage: "భాష",
+    voiceSpeed: "వేగం",
+    voiceActiveEngine: "యాక్టివ్ క్లౌడ్ ఇంజిన్",
+    voiceConfig: "క్లౌడ్ న్యూరల్ వాయిస్ కాన్ఫిగరేషన్",
+    voiceUnavailable: "వాయిస్ సేవ తాత్కాలికంగా అందుబాటులో లేదు. దయచేసి మళ్లీ ప్రయత్నించండి.",
+    clearChat: "చాట్ క్లియర్ చేయండి",
+
+    search: "శోధించండి",
+    submit: "సమర్పించండి",
+    save: "సేవ్ చేయండి",
+    cancel: "రద్దు చేయండి",
+    back: "వెనుకకు",
+    next: "తరువాత",
+    loading: "లోడ్ అవుతోంది...",
+    error: "లోపం",
+    success: "విజయం",
+    noResults: "ఫలితాలు కనుగొనబడలేదు",
+    loadingPrices: "ధరలు లోడ్ అవుతున్నాయి...",
+    updated: "నవీకరించబడింది",
+    distance: "దూరం",
+    kisanCallCenter: "కిసాన్ కాల్ సెంటర్",
+    tollFree: "టోల్ ఫ్రీ",
+    online: "ఆన్‌లైన్",
+    modules: "విభాగాలు"
   },
 
   hi: {
@@ -536,14 +776,24 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     navDetect: "रोग पहचान",
     navAdvisory: "किसान सलाह",
     navWeather: "मौसम",
-    navMarketPrices: "मंडी भाव (Market Prices)",
+    navMarketPrices: "मंडी भाव",
     navAssistant: "AI सहायक",
+    navSchemes: "सरकारी योजनाएं",
     navHistory: "स्वास्थ्य इतिहास",
     navNews: "किसान समाचार",
     navResources: "कृषि संसाधन",
     navProfile: "किसान प्रोफ़ाइल",
     navLogin: "लॉगिन / रजिस्टर",
     navLogout: "लॉगआउट",
+
+    navDiseaseDetection: "रोग पहचान",
+    navCropAdvisory: "फसल सलाह",
+    navWeatherRisk: "मौसम एवं जोखिम",
+    navGovtSchemes: "सरकारी योजनाएं",
+    navMarketNews: "मंडी समाचार",
+    navKnowledgeCenter: "ज्ञान केंद्र",
+    navFarmResources: "कृषि संसाधन",
+    navMyProfile: "मेरी प्रोफ़ाइल",
 
     step1Title: "चरण 1: अपनी फसल चुनें",
     step1Subtitle: "उस फसल का चयन करें जिसकी आप जांच करना चाहते हैं",
@@ -613,9 +863,9 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     weatherRiskTitle: "मौसम आधारित रोग जोखिम",
     marketPricesTitle: "इस फसल के वर्तमान मंडी भाव",
 
-    marketPricesHeader: "मंडी भाव (Market Prices)",
-    marketPricesSubtitle: "भारत सरकार के ओपन डेटा पोर्टल (OGD) से प्राप्त ताजा मंडी भाव",
-    avgPrice: "औसत भाव",
+    marketPricesHeader: "मंडी भाव",
+    marketPricesSubtitle: "भारत सरकार के ओपन डेटा पोर्टल (OGD) से प्राप्त ताजा मंडी भाव एवं सड़क दूरी",
+    avgPrice: "औसत मॉडल भाव",
     highestPrice: "उच्चतम भाव",
     lowestPrice: "न्यूनतम भाव",
     lastUpdated: "अंतिम अपडेट",
@@ -630,8 +880,42 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     priceTrend30Day: "30-दिवसीय मूल्य रुझान",
     aiMarketInsightTitle: "AI मंडी विश्लेषण",
     ogdAttribution: "स्रोत: भारत सरकार ओपन गवर्नमेंट डेटा प्लेटफॉर्म (data.gov.in)",
-    demoNotice: "डेमो डेटा – लाइव डेटा हेतु सरकारी OGD API कनेक्ट करें",
+    demoNotice: "सड़क दूरी के साथ वास्तविक APMC मंडी भाव",
     noMarketData: "चुने गए फिल्टर के लिए कोई मंडी भाव नहीं मिला।",
+
+    refreshPrices: "भाव रिफ्रेश करें",
+    searchMandis: "मंडी खोजें",
+    updateGps: "GPS अपडेट करें",
+    changeMandi: "मंडी बदलें",
+    nearestMandi: "निकटतम APMC मंडी",
+    otherNearbyMarkets: "अन्य निकटवर्ती मंडियां (मंडी बदलें)",
+    bestMarketToSell: "बेचने के लिए सर्वोत्तम मंडी",
+    getDirections: "दिशा-निर्देश प्राप्त करें",
+    sortedByRoadDistance: "सड़क दूरी के अनुसार क्रमबद्ध",
+    roadDistance: "सड़क दूरी",
+    byRoad: "सड़क द्वारा",
+    yourFarm: "आपका खेत",
+    yourCrops: "आपकी फसलें (प्राथमिकता)",
+    selectCrop: "मंडी भाव हेतु फसल चुनें",
+    selectMarket: "मंडी चुनें",
+    selectLanguage: "भाषा चुनें",
+    allMarketCommodities: "सभी मंडी वस्तुएं",
+    priceTrendHistory: "मूल्य रुझान इतिहास",
+    tradedRange: "कारोबार रेंज",
+    wholesaleApprox: "थोक लगभग",
+    estFreight: "अनुमानित किराया",
+    topRate: "सर्वोत्तम भाव",
+    viewMarket: "मंडी देखें",
+    marketCatalog: "भारतीय APMC मंडी निर्देशिका",
+    searchMarketPlaceholder: "मंडी खोजें (उदा. शमशाबाद, बोवेनपल्ली, वारंगल, कोलार, मदनपल्ले, गुंटूर)...",
+    cardsView: "कार्ड्स",
+    tableView: "तालिका",
+    days7: "7 दिन",
+    days30: "30 दिन",
+    commodity: "फसल / वस्तु",
+    marketApmc: "मंडी (APMC)",
+    districtState: "जिला एवं राज्य",
+    arrivalDate: "आवक तिथि",
 
     weatherHeader: "कृषि मौसम एवं रोग जोखिम",
     weatherSubtitle: "वास्तविक समय मौसम सलाह, रोग जोखिम और कीटनाशक छिड़काव समय",
@@ -709,6 +993,41 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     assistantPlaceholder: "अपना प्रश्न लिखें या माइक पर बोलें...",
     diagnosisContextLoaded: "सक्रिय रिपोर्ट संदर्भ लोड किया गया",
     voiceListening: "सुन रहे हैं... स्पष्ट बोलें",
-    voiceSpeak: "आवाज़ में सुनें"
+    voiceSpeak: "आवाज़ में सुनें",
+    voiceAI: "वॉयस AI",
+    voiceSettings: "वॉयस सेटिंग्स",
+    voiceTest: "वॉयस टेस्ट करें",
+    voiceReadout: "वॉयस पढ़ें",
+    voiceGenerating: "वॉयस तैयार हो रही है...",
+    voiceSpeaking: "बोल रहा है...",
+    voiceReady: "तैयार",
+    voicePause: "रोकें",
+    voiceResume: "फिर से शुरू करें",
+    voiceStop: "वॉयस रोकें",
+    voiceInput: "वॉयस इनपुट",
+    voiceLanguage: "भाषा",
+    voiceSpeed: "गति",
+    voiceActiveEngine: "सक्रिय क्लाउड इंजन",
+    voiceConfig: "क्लाउड न्यूरल वॉयस कॉन्फ़िगरेशन",
+    voiceUnavailable: "वॉयस सेवा अस्थायी रूप से अनुपलब्ध है। कृपया पुन: प्रयास करें।",
+    clearChat: "चैट साफ़ करें",
+
+    search: "खोजें",
+    submit: "जमा करें",
+    save: "सहेजें",
+    cancel: "रद्द करें",
+    back: "वापस",
+    next: "आगे",
+    loading: "लोड हो रहा है...",
+    error: "त्रुटि",
+    success: "सफल",
+    noResults: "कोई परिणाम नहीं मिला",
+    loadingPrices: "भाव लोड हो रहे हैं...",
+    updated: "अपडेट किया गया",
+    distance: "दूरी",
+    kisanCallCenter: "किसान कॉल सेंटर",
+    tollFree: "टोल फ्री",
+    online: "ऑनलाइन",
+    modules: "मॉड्यूल"
   }
 };

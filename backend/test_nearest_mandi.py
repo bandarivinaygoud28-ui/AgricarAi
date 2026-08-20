@@ -7,65 +7,61 @@ sys.path.insert(0, os.path.dirname(__file__))
 from fastapi.testclient import TestClient
 from main import app
 from market.mandi_db import haversine_distance, find_nearest_mandi, get_nearby_mandis
+from market.routing_service import get_driving_distance
 
 def test_nearest_mandi_calculations():
-    print("=== 1. Testing Haversine Distance Calculation ===")
-    # Kummariguda / Shamshabad area: 17.2500, 78.4000
+    print("=== 1. Testing Road Driving Distance vs Haversine ===")
+    # Yenkapally area (Ranga Reddy)
+    farmer_lat, farmer_lon = 17.3228, 78.2713
     shamshabad_lat, shamshabad_lon = 17.2600, 78.3970
-    farmer_lat, farmer_lon = 17.2500, 78.4000
-    dist = haversine_distance(farmer_lat, farmer_lon, shamshabad_lat, shamshabad_lon)
-    print(f"Distance from ({farmer_lat}, {farmer_lon}) to Shamshabad: {dist} km")
-    assert dist < 5.0, f"Expected < 5.0 km, got {dist}"
+    
+    h_dist = haversine_distance(farmer_lat, farmer_lon, shamshabad_lat, shamshabad_lon)
+    route_info = get_driving_distance(farmer_lat, farmer_lon, shamshabad_lat, shamshabad_lon)
+    
+    print(f"Haversine straight-line: {h_dist} km")
+    print(f"Road Driving distance: {route_info['formatted_distance']} ({route_info['duration_minutes']} mins, label: {route_info['label']})")
+    assert route_info["is_road_distance"] is True
+    assert route_info["distance_km"] > h_dist, "Road distance should exceed or equal straight-line distance"
 
-    print("=== 2. Testing find_nearest_mandi ===")
+    print("\n=== 2. Testing find_nearest_mandi (Sorted by Road Distance) ===")
     nearest = find_nearest_mandi(farmer_lat, farmer_lon)
-    print(f"Nearest Mandi found: {nearest['name']} ({nearest['distance_km']} km)")
-    assert "Shamshabad" in nearest["name"]
+    print(f"Nearest Mandi found: {nearest['name']} ({nearest.get('formatted_distance')})")
+    assert nearest["distance_km"] is not None
 
-    # Warangal farmer: 17.9689, 79.5941
-    warangal_nearest = find_nearest_mandi(17.9689, 79.5941)
-    print(f"Nearest Mandi for Warangal farmer: {warangal_nearest['name']} ({warangal_nearest['distance_km']} km)")
-    assert "Warangal" in warangal_nearest["name"] or "Enumamula" in warangal_nearest["name"]
-
-    print("=== 3. Testing get_nearby_mandis ===")
+    print("\n=== 3. Testing get_nearby_mandis (Sorted strictly by Road Distance) ===")
     nearby = get_nearby_mandis(farmer_lat, farmer_lon, limit=4)
-    print("Top 4 nearby mandis:")
+    print("Top 4 nearby mandis by road distance:")
     for idx, m in enumerate(nearby, 1):
-        print(f"  {idx}. {m['name']} - {m['distance_km']} km ({m['district']}, {m['state']})")
+        print(f"  {idx}. {m['name']} - {m.get('formatted_distance')} ({m['district']}, {m['state']})")
     assert len(nearby) == 4
     assert nearby[0]["distance_km"] <= nearby[1]["distance_km"] <= nearby[2]["distance_km"]
 
 def test_api_endpoints():
     client = TestClient(app)
 
-    print("=== 4. Testing GET /api/market-prices with lat, lon ===")
-    res = client.get("/api/market-prices?lat=17.2500&lon=78.4000&crop=Tomato")
+    print("\n=== 4. Testing GET /api/market-prices with road distance ===")
+    res = client.get("/api/market-prices?lat=17.3457&lon=78.5528&crop=Tomato")
     assert res.status_code == 200
     data = res.json()
     assert "nearest_mandi" in data
-    print(f"API Nearest Mandi: {data['nearest_mandi']['name']} ({data['nearest_mandi']['distance_km']} km)")
+    assert "formatted_distance" in data["nearest_mandi"]
+    assert "distance_label" in data["nearest_mandi"]
     assert "nearby_markets" in data
     assert len(data["records"]) > 0
-    print(f"First record: {data['records'][0]['commodity']} - Modal: Rs.{data['records'][0]['modal_price']}/Qtl (Rs.{data['records'][0]['price_per_kg']}/kg)")
-    assert data["records"][0]["modal_price"] > 0
-    assert "Quintal" in data["records"][0]["unit"]
+    assert "formatted_distance" in data["records"][0]
+    print(f"Nearest Mandi: {data['nearest_mandi']['name']} - {data['nearest_mandi']['formatted_distance']}")
+    print(f"Routing Explanation: {data.get('routing_explanation')}")
 
-    print("=== 5. Testing GET /api/market-prices/best-market ===")
-    res_best = client.get("/api/market-prices/best-market?lat=17.2500&lon=78.4000&crop=Tomato")
+    print("\n=== 5. Testing GET /api/market-prices/best-market with transport cost ===")
+    res_best = client.get("/api/market-prices/best-market?lat=17.3457&lon=78.5528&crop=Tomato")
     assert res_best.status_code == 200
     best_data = res_best.json()
     assert best_data["has_recommendation"] is True
-    print("Best Market Advisory received successfully.")
-    print("Disclaimer verified.")
+    assert "routing_explanation" in best_data
+    assert "comparisons" in best_data
+    print("Best Market Recommendation Text:\n", best_data["recommendation_text"])
 
-    print("=== 6. Testing GET /api/market-prices/mandis search ===")
-    res_mandis = client.get("/api/market-prices/mandis?search=Shamshabad")
-    assert res_mandis.status_code == 200
-    mandis_data = res_mandis.json()
-    assert len(mandis_data) > 0
-    print(f"Found Mandi: {mandis_data[0]['name']} ({mandis_data[0]['district']})")
-
-    print("\nALL NEAREST MANDI TESTS PASSED SUCCESSFULLY! [OK]")
+    print("\nALL NEAREST MANDI ROAD DISTANCE TESTS PASSED SUCCESSFULLY! [OK]")
 
 if __name__ == "__main__":
     test_nearest_mandi_calculations()

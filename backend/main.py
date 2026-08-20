@@ -32,6 +32,7 @@ from resources.resource_service import (
 )
 from location.location_service import search_locations, reverse_geocode, detect_ip_location
 from voice.tts_service import synthesize_speech, get_voice_info
+from schemes.schemes_service import get_schemes_list, get_scheme_by_id
 
 # Initialize database tables and ensure column migrations
 Base.metadata.create_all(bind=engine)
@@ -716,6 +717,47 @@ async def synthesize_text_to_speech(req: VoiceSynthesizeRequest):
 def get_voice_service_info(language: str = Query("te-IN")):
     """Returns active cloud neural voice metadata for the language."""
     return get_voice_info(language=language)
+
+
+# ============================================================
+# 6.2 GOVERNMENT SCHEMES & SUBSIDIES ENDPOINTS
+# ============================================================
+
+@app.get("/api/schemes")
+def list_government_schemes(
+    state: Optional[str] = Query(None),
+    district: Optional[str] = Query(None),
+    crops: Optional[str] = Query(None),
+    land_area: Optional[float] = Query(None),
+    category: Optional[str] = Query("All"),
+    search: Optional[str] = Query(None),
+    scope: Optional[str] = Query(None)
+):
+    """
+    Returns verified Government Schemes, Subsidies, Loans, and Support Programs.
+    Prioritizes state and district programs according to farmer location and crops.
+    """
+    return get_schemes_list(
+        state=state,
+        district=district,
+        crops=crops,
+        land_area=land_area,
+        category=category,
+        search=search,
+        scope=scope
+    )
+
+
+@app.get("/api/schemes/{scheme_id}")
+def fetch_scheme_details(scheme_id: str):
+    """Returns full verified details and application guidelines for a specific scheme."""
+    scheme = get_scheme_by_id(scheme_id)
+    if not scheme:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scheme with ID '{scheme_id}' not found."
+        )
+    return scheme
 
 
 # ============================================================

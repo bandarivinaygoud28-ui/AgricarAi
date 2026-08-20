@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LanguageCode, DiseaseScanResult } from './types';
 import { translations } from './utils/translations';
 import { api } from './services/api';
+import { speechService } from './utils/speechService';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
@@ -10,7 +11,7 @@ import { MarketPricesPage } from './pages/MarketPricesPage';
 import { WeatherPage } from './pages/WeatherPage';
 import { AdvisoryPage } from './pages/AdvisoryPage';
 import { AssistantPage } from './pages/AssistantPage';
-import { HistoryPage } from './pages/HistoryPage';
+import { SchemesPage } from './pages/SchemesPage';
 import { FarmerNewsPage } from './pages/FarmerNewsPage';
 import { FarmResourcesPage } from './pages/FarmResourcesPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -33,6 +34,7 @@ export const App: React.FC = () => {
   const t = translations[currentLanguage];
 
   const handleLanguageChange = (lang: LanguageCode) => {
+    speechService.onLanguageChange(lang);
     setCurrentLanguage(lang);
     localStorage.setItem('agricare_lang', lang);
   };
@@ -137,11 +139,12 @@ export const App: React.FC = () => {
               />
             )}
 
-            {activeTab === 'history' && (
-              <HistoryPage
+            {activeTab === 'schemes' && (
+              <SchemesPage
                 language={currentLanguage}
-                onAskAssistant={handleAskAssistantWithDiagnosis}
-                onNavigateToMarket={(crop) => handleNavigate('market-prices', { crop })}
+                onAskAssistantWithScheme={(scheme) => {
+                  handleNavigate('assistant', { initialQuery: `Tell me more about ${scheme.title}` });
+                }}
               />
             )}
 

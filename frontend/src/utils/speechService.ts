@@ -11,14 +11,14 @@ export interface VoiceInfo {
   unavailableMessage?: string;
 }
 
-// Voice test sentences specified in requirements
+// Voice test prompts
 export const VOICE_TEST_PROMPTS: Record<LanguageCode, string> = {
   te: "నమస్కారం రైతు గారు. AgriCare AI మీ వ్యవసాయానికి సహాయం చేస్తుంది.",
   hi: "नमस्ते किसान जी। AgriCare AI आपकी खेती में सहायता करेगा।",
   en: "Hello farmer. AgriCare AI is ready to help you."
 };
 
-// Language display names
+// Language display metadata
 export const LANGUAGE_DISPLAY: Record<LanguageCode, { name: string; nativeName: string; tag: string }> = {
   te: { name: 'Telugu', nativeName: 'తెలుగు', tag: 'te-IN' },
   hi: { name: 'Hindi', nativeName: 'हिन्दी', tag: 'hi-IN' },
@@ -38,10 +38,10 @@ class SpeechService {
   private currentText: string = '';
   private currentLanguage: LanguageCode = 'en';
   private stateListeners: Array<(state: SpeechState) => void> = [];
-  private audioCache: Map<string, string> = new Map(); // cacheKey -> blobUrl
+  private activeAbortController: AbortController | null = null;
+  private activeRequestId: number = 0;
 
   constructor() {
-    // Initial cleanup listener on window unload
     if (typeof window !== 'undefined') {
       window.addEventListener('beforeunload', () => {
         this.stop();
@@ -73,6 +73,10 @@ class SpeechService {
     return this.state === 'paused';
   }
 
+  public getCurrentLanguage(): LanguageCode {
+    return this.currentLanguage;
+  }
+
   public onStateChange(listener: (state: SpeechState) => void): () => void {
     this.stateListeners.push(listener);
     listener(this.state);
@@ -93,6 +97,51 @@ class SpeechService {
   }
 
   /**
+   * Called immediately whenever the global application language changes.
+   * Cancels in-flight requests, stops playback, revokes object URLs, and resets state to idle.
+   */
+  public onLanguageChange(newLang: LanguageCode) {
+    // 1. Invalidate any in-flight request
+    this.activeRequestId++;
+    if (this.activeAbortController) {
+      try {
+        this.activeAbortController.abort();
+      } catch {}
+      this.activeAbortController = null;
+    }
+
+    // 2. Stop and clear any active audio element
+    if (this.currentAudio) {
+      try {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+        this.currentAudio.src = '';
+      } catch {}
+      this.currentAudio = null;
+    }
+
+    // 3. Clean up active Object URL
+    if (this.currentAudioUrl) {
+      try {
+        URL.revokeObjectURL(this.currentAudioUrl);
+      } catch {}
+      this.currentAudioUrl = null;
+    }
+
+    // 4. Cancel browser speech synthesis if active
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
+    }
+
+    // 5. Update language and reset state to idle
+    this.currentLanguage = newLang;
+    this.currentText = '';
+    this.setState('idle');
+  }
+
+  /**
    * Returns current active voice metadata for the selected language.
    */
   public getVoiceInfo(language: LanguageCode): VoiceInfo {
@@ -101,7 +150,7 @@ class SpeechService {
       voiceName: NEURAL_VOICE_NAMES[language] || `${LANGUAGE_DISPLAY[language].name} Neural Voice`,
       lang: tag,
       isAvailable: true,
-      provider: 'Cloud Neural TTS (Azure AI / Edge Speech)'
+      provider: 'Cloud Neural TTS (Azure AI / Microsoft Neural)'
     };
   }
 
@@ -145,91 +194,135 @@ class SpeechService {
       return false;
     }
 
-    // Stop previous audio playback
+    // 1. Cancel previous request and audio
     this.stop();
+
+    const requestId = ++this.activeRequestId;
+    this.activeAbortController = new AbortController();
+    const signal = this.activeAbortController.signal;
 
     this.currentText = cleaned;
     this.currentLanguage = language;
     this.setState('generating');
 
     const langTag = this.getLanguageTag(language);
-    const cacheKey = `${langTag}:${cleaned}`;
 
-    let blobUrl = this.audioCache.get(cacheKey);
+    try {
+      // 2. Fetch audio blob from backend Cloud Neural TTS
+      const audioBlob = await api.synthesizeVoice(cleaned, langTag, signal);
 
-    if (!blobUrl) {
-      try {
-        const audioBlob = await api.synthesizeVoice(cleaned, langTag);
-        blobUrl = URL.createObjectURL(audioBlob);
-        this.audioCache.set(cacheKey, blobUrl);
-      } catch (cloudErr) {
-        console.warn('Backend Cloud TTS failed, checking local browser fallback:', cloudErr);
-        
-        // Fallback: Check if browser has an authentic matching voice
-        const fallbackSuccess = await this.speakWithBrowserFallback(cleaned, language, options);
-        if (!fallbackSuccess) {
-          this.setState('idle');
-          const errMsg = "Voice service temporarily unavailable. Please try again.";
-          options.onError?.(errMsg);
-          return false;
-        }
-        return true;
+      // Check if this request was superseded while fetch was in flight
+      if (requestId !== this.activeRequestId || signal.aborted) {
+        return false;
       }
-    }
 
-    return new Promise((resolve) => {
-      try {
-        const audio = new Audio(blobUrl);
-        this.currentAudio = audio;
-        this.currentAudioUrl = blobUrl;
+      // 3. Create fresh Object URL
+      const blobUrl = URL.createObjectURL(audioBlob);
+      if (this.currentAudioUrl) {
+        try {
+          URL.revokeObjectURL(this.currentAudioUrl);
+        } catch {}
+      }
+      this.currentAudioUrl = blobUrl;
 
-        // Apply speed if specified
-        if (options.speed && options.speed > 0) {
-          audio.playbackRate = options.speed;
-        }
+      // 4. Create and play Audio
+      return new Promise<boolean>((resolve) => {
+        try {
+          const audio = new Audio(blobUrl);
+          this.currentAudio = audio;
 
-        audio.onplay = () => {
-          this.setState('speaking');
-          options.onStart?.();
-        };
-
-        audio.onpause = () => {
-          if (audio.currentTime > 0 && !audio.ended) {
-            this.setState('paused');
+          // Apply speed if specified
+          if (options.speed && options.speed > 0) {
+            audio.playbackRate = options.speed;
           }
-        };
 
-        audio.onended = () => {
-          this.setState('idle');
-          this.currentAudio = null;
-          options.onEnd?.();
-          resolve(true);
-        };
+          audio.onplay = () => {
+            if (requestId === this.activeRequestId) {
+              this.setState('speaking');
+              options.onStart?.();
+            }
+          };
 
-        audio.onerror = (e) => {
-          console.error('Audio playback error:', e);
-          this.setState('idle');
-          this.currentAudio = null;
-          options.onError?.('Audio playback failed.');
-          resolve(false);
-        };
+          audio.onpause = () => {
+            if (requestId === this.activeRequestId && audio.currentTime > 0 && !audio.ended) {
+              this.setState('paused');
+            }
+          };
 
-        audio.play().catch(playErr => {
-          console.warn('Audio play() promise rejected:', playErr);
-          this.setState('idle');
-          options.onError?.('Playback blocked by browser autoplay policy. Please tap Voice Readout again.');
-          resolve(false);
-        });
-      } catch (e) {
-        this.setState('idle');
-        options.onError?.('Failed to initialize audio playback.');
-        resolve(false);
+          audio.onended = () => {
+            if (requestId === this.activeRequestId) {
+              this.setState('idle');
+              this.currentAudio = null;
+              if (this.currentAudioUrl) {
+                try {
+                  URL.revokeObjectURL(this.currentAudioUrl);
+                } catch {}
+                this.currentAudioUrl = null;
+              }
+              options.onEnd?.();
+              resolve(true);
+            }
+          };
+
+          audio.onerror = (e) => {
+            console.error('Audio playback error:', e);
+            if (requestId === this.activeRequestId) {
+              this.setState('idle');
+              this.currentAudio = null;
+              if (this.currentAudioUrl) {
+                try {
+                  URL.revokeObjectURL(this.currentAudioUrl);
+                } catch {}
+                this.currentAudioUrl = null;
+              }
+              const errMsg = "Voice service temporarily unavailable. Please try again.";
+              options.onError?.(errMsg);
+              resolve(false);
+            }
+          };
+
+          audio.play().catch(playErr => {
+            console.warn('Audio play() error:', playErr);
+            if (requestId === this.activeRequestId) {
+              this.setState('idle');
+              const errMsg = "Playback blocked by browser autoplay policy. Please tap Voice Readout again.";
+              options.onError?.(errMsg);
+              resolve(false);
+            }
+          });
+        } catch (e) {
+          if (requestId === this.activeRequestId) {
+            this.setState('idle');
+            options.onError?.("Voice service temporarily unavailable. Please try again.");
+            resolve(false);
+          }
+        }
+      });
+    } catch (cloudErr: any) {
+      if (requestId !== this.activeRequestId || signal.aborted) {
+        return false;
       }
-    });
+
+      console.warn('Cloud TTS synthesis error:', cloudErr);
+
+      // Fallback only for English if browser has an authentic voice
+      if (language === 'en') {
+        const fallbackSuccess = await this.speakWithBrowserFallback(cleaned, language, options, requestId);
+        if (fallbackSuccess) {
+          return true;
+        }
+      }
+
+      // For Telugu and Hindi, NEVER fall back to English voice!
+      this.setState('idle');
+      const errMsg = "Voice service temporarily unavailable. Please try again.";
+      options.onError?.(errMsg);
+      return false;
+    }
   }
 
   /**
-   * Browser SpeechSynthesis fallback ONLY when authentic matching voice exists.
+   * Browser SpeechSynthesis fallback ONLY when an authentic matching voice exists.
    * NEVER falls back to an English voice for Telugu or Hindi!
    */
   private speakWithBrowserFallback(
@@ -240,7 +333,8 @@ class SpeechService {
       onStart?: () => void;
       onEnd?: () => void;
       onError?: (error: string) => void;
-    }
+    },
+    requestId: number
   ): Promise<boolean> {
     return new Promise((resolve) => {
       if (typeof window === 'undefined' || !window.speechSynthesis) {
@@ -267,7 +361,7 @@ class SpeechService {
         matchingVoice = voices.find(v => (v.lang || '').toLowerCase().startsWith('en'));
       }
 
-      // If no language-matching voice exists, do not use browser TTS (would sound broken)
+      // If no language-matching voice exists, do not use browser TTS
       if (!matchingVoice) {
         resolve(false);
         return;
@@ -281,19 +375,25 @@ class SpeechService {
         utterance.rate = options.speed || ((language === 'te' || language === 'hi') ? 0.85 : 0.95);
 
         utterance.onstart = () => {
-          this.setState('speaking');
-          options.onStart?.();
+          if (requestId === this.activeRequestId) {
+            this.setState('speaking');
+            options.onStart?.();
+          }
         };
 
         utterance.onend = () => {
-          this.setState('idle');
-          options.onEnd?.();
-          resolve(true);
+          if (requestId === this.activeRequestId) {
+            this.setState('idle');
+            options.onEnd?.();
+            resolve(true);
+          }
         };
 
         utterance.onerror = () => {
-          this.setState('idle');
-          resolve(false);
+          if (requestId === this.activeRequestId) {
+            this.setState('idle');
+            resolve(false);
+          }
         };
 
         window.speechSynthesis.speak(utterance);
@@ -321,15 +421,32 @@ class SpeechService {
   }
 
   public stop() {
+    this.activeRequestId++;
+    if (this.activeAbortController) {
+      try {
+        this.activeAbortController.abort();
+      } catch {}
+      this.activeAbortController = null;
+    }
+
     if (this.currentAudio) {
       try {
         this.currentAudio.pause();
         this.currentAudio.currentTime = 0;
+        this.currentAudio.src = '';
       } catch (e) {
         console.warn('Audio stop error:', e);
       }
       this.currentAudio = null;
     }
+
+    if (this.currentAudioUrl) {
+      try {
+        URL.revokeObjectURL(this.currentAudioUrl);
+      } catch {}
+      this.currentAudioUrl = null;
+    }
+
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       try {
         window.speechSynthesis.cancel();

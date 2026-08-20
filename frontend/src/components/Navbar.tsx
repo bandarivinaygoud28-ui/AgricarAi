@@ -7,7 +7,7 @@ import {
   CloudSun,
   TrendingUp,
   MessageSquare,
-  History,
+  Landmark,
   Newspaper,
   Tractor,
   UserCircle,
@@ -45,14 +45,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navLinks = [
     { id: 'dashboard', label: t.navDashboard, icon: LayoutDashboard },
-    { id: 'detect', label: 'Disease Detection', icon: ScanLine, highlight: true },
-    { id: 'advisory', label: 'Crop Advisory', icon: BookOpen },
-    { id: 'weather', label: 'Weather & Risk', icon: CloudSun },
-    { id: 'market-prices', label: 'Market Prices', icon: TrendingUp },
-    { id: 'assistant', label: 'AI Assistant', icon: MessageSquare },
-    { id: 'history', label: 'Crop History', icon: History },
-    { id: 'news', label: 'Knowledge Center', icon: Newspaper },
-    { id: 'resources', label: 'Farm Resources', icon: Tractor },
+    { id: 'detect', label: t.navDiseaseDetection || 'Disease Detection', icon: ScanLine, highlight: true },
+    { id: 'advisory', label: t.navCropAdvisory || 'Crop Advisory', icon: BookOpen },
+    { id: 'weather', label: t.navWeatherRisk || 'Weather & Risk', icon: CloudSun },
+    { id: 'market-prices', label: t.navMarketPrices || 'Market Prices', icon: TrendingUp },
+    { id: 'assistant', label: t.navAssistant || 'AI Assistant', icon: MessageSquare },
+    { id: 'schemes', label: t.navGovtSchemes || 'Govt Schemes', icon: Landmark },
+    { id: 'news', label: t.navMarketNews || 'Market News', icon: Newspaper },
+    { id: 'resources', label: t.navFarmResources || 'Farm Resources', icon: Tractor },
   ];
 
   return (
@@ -188,10 +188,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => onTabChange('assistant')}
               className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
-              title="Open Voice Assistant"
+              title={t.voiceAI || 'Voice AI'}
             >
               <Mic className="w-4 h-4 text-emerald-600" />
-              <span className="hidden sm:inline">Voice AI</span>
+              <span className="hidden sm:inline">{t.voiceAI || 'Voice AI'}</span>
             </button>
 
             {/* Farmer Profile Button */}

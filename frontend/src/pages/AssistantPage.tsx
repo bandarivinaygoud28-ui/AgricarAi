@@ -5,11 +5,9 @@ import { api } from '../services/api';
 import { VoiceButton } from '../components/VoiceButton';
 import {
   speechService,
-  VoiceInfo,
   SpeechState,
   LANGUAGE_DISPLAY,
-  NEURAL_VOICE_NAMES,
-  VOICE_TEST_PROMPTS
+  NEURAL_VOICE_NAMES
 } from '../utils/speechService';
 import {
   Send,
@@ -17,14 +15,11 @@ import {
   User,
   Sparkles,
   FileCheck,
-  TrendingUp,
-  CloudSun,
   Trash2,
   Volume2,
   VolumeX,
   Settings,
   CheckCircle2,
-  Mic,
   Sliders,
   ChevronDown,
   ChevronUp,
@@ -80,6 +75,25 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
+
+  // Update initial welcome message on language change if it's the only message
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === '1') {
+        return [{
+          id: '1',
+          sender: 'assistant',
+          text: language === 'te'
+            ? "నమస్కారం! నేను మీ అగ్రికేర్ AI వ్యవసాయ సహాయకుడిని. పంట తెగుళ్లు, నివారణ మందులు, మార్కెట్ ధరలు లేదా వాతావరణం గురించి ఏదైనా అడగండి."
+            : language === 'hi'
+            ? "नमस्ते! मैं आपका एग्रीकेयर AI किसान सहायक हूँ। फसल रोग, उपचार, मंडी भाव या मौसम के बारे में कोई भी प्रश्न पूछें।"
+            : "Hello! I am your AgriCare AI Farmer Assistant. Ask me anything about crop diseases, treatment dosages, live market rates, or weather risks.",
+          timestamp: prev[0].timestamp
+        }];
+      }
+      return prev;
+    });
+  }, [language]);
 
   const [inputVal, setInputVal] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -234,20 +248,20 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
                   ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
-              title="Voice AI Settings"
+              title={t.voiceSettings || "Voice Settings"}
             >
               <Sliders className="w-3.5 h-3.5" />
-              <span>Voice Settings</span>
+              <span>{t.voiceSettings || "Voice Settings"}</span>
               {showVoiceSettings ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
 
             <button
               onClick={() => setMessages([messages[0]])}
               className="p-2 text-slate-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition-colors text-xs flex items-center gap-1 font-bold border border-transparent hover:border-red-200"
-              title="Clear chat history"
+              title={t.clearChat || "Clear Chat"}
             >
               <Trash2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Clear Chat</span>
+              <span className="hidden sm:inline">{t.clearChat || "Clear Chat"}</span>
             </button>
           </div>
         </div>
@@ -257,7 +271,7 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {/* Language Display */}
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 font-medium">Language:</span>
+              <span className="text-slate-400 font-medium">{t.voiceLanguage || "Language"}:</span>
               <span className="font-bold text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
                 {LANGUAGE_DISPLAY[language].nativeName}
               </span>
@@ -265,7 +279,7 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
 
             {/* Voice Status Display */}
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 font-medium">Voice:</span>
+              <span className="text-slate-400 font-medium">{t.voiceAI || "Voice"}:</span>
               <span className="font-semibold text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
                 <Radio className="w-3 h-3 text-emerald-600 animate-pulse" />
                 <span className="max-w-[200px] sm:max-w-[260px] truncate font-bold">
@@ -279,7 +293,7 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
 
             {/* Speech Speed Indicator */}
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 font-medium">Speed:</span>
+              <span className="text-slate-400 font-medium">{t.voiceSpeed || "Speed"}:</span>
               <span className="font-bold text-slate-800 bg-white px-2 py-0.5 rounded-lg border border-slate-200">
                 {speechSpeed}x
               </span>
@@ -301,27 +315,27 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
                   ? 'bg-amber-500 text-white border-amber-600'
                   : 'bg-emerald-700 text-white hover:bg-emerald-800 border-emerald-800'
               }`}
-              title="Test Cloud Voice Pronunciation"
+              title={t.voiceTest || "Test Voice"}
             >
               {speechState === 'generating' ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Generating voice...</span>
+                  <span>{t.voiceGenerating || "Generating voice..."}</span>
                 </>
               ) : speechState === 'speaking' ? (
                 <>
                   <VolumeX className="w-3.5 h-3.5" />
-                  <span>Stop Voice</span>
+                  <span>{t.voiceStop || "Stop Voice"}</span>
                 </>
               ) : speechState === 'paused' ? (
                 <>
                   <Play className="w-3.5 h-3.5" />
-                  <span>Resume</span>
+                  <span>{t.voiceResume || "Resume"}</span>
                 </>
               ) : (
                 <>
                   <Volume2 className="w-3.5 h-3.5" />
-                  <span>🔊 Test Voice</span>
+                  <span>🔊 {t.voiceTest || "Test Voice"}</span>
                 </>
               )}
             </button>
@@ -333,14 +347,14 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
           <div className="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-200/80 space-y-3 text-xs">
             <div className="font-bold text-slate-800 flex items-center gap-1.5">
               <Settings className="w-4 h-4 text-emerald-700" />
-              <span>Cloud Neural Voice Configuration</span>
+              <span>{t.voiceConfig || "Cloud Neural Voice Configuration"}</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Active Voice Provider */}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Active Cloud Engine:
+                  {t.voiceActiveEngine || "Active Cloud Engine"}:
                 </label>
                 <div className="bg-white border border-emerald-200 rounded-xl p-2.5 text-emerald-950 font-medium space-y-0.5">
                   <div className="font-bold text-emerald-800 flex items-center gap-1">
@@ -356,7 +370,7 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({
               {/* Speech Speed Buttons */}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Speech Speed (Rate):
+                  {t.voiceSpeed || "Speech Speed (Rate)"}:
                 </label>
                 <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200">
                   {speedOptions.map((s) => (

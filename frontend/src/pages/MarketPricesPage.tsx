@@ -12,11 +12,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Navigation,
-  ArrowRight,
-  TrendingDown,
   Layers,
   ChevronRight,
-  HelpCircle,
   SlidersHorizontal,
   X
 } from 'lucide-react';
@@ -77,7 +74,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
     return localStorage.getItem('agricare_farm_location_name') || '';
   });
 
-  const [farmerCrops, setFarmerCrops] = useState<string[]>(() => {
+  const [farmerCrops] = useState<string[]>(() => {
     const saved = localStorage.getItem('agricare_farmer_crops');
     if (saved) {
       return saved.split(',').map(c => c.trim()).filter(Boolean);
@@ -178,7 +175,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
       setHistoryTrend(histRes.history || []);
     } catch (err) {
       console.error(err);
-      setLocationError('Unable to load latest market price data. Please try again.');
+      setLocationError(t.noMarketData || 'Unable to load latest market price data. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -249,7 +246,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
     fetchMarketPrices(mandi.name);
   };
 
-  // Sort handler for table view
+  // Sorting Handler
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -259,19 +256,20 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
     }
   };
 
-  // Filtered and sorted records
   const sortedRecords = useMemo(() => {
     return [...records].sort((a, b) => {
-      const valA = (a as any)[sortBy];
-      const valB = (b as any)[sortBy];
-      if (typeof valA === 'string') {
-        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      let aVal = (a as any)[sortBy] ?? 0;
+      let bVal = (b as any)[sortBy] ?? 0;
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = (bVal || '').toString().toLowerCase();
+        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
-      return sortOrder === 'asc' ? valA - valB : valB - valA;
+      return sortOrder === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
     });
   }, [records, sortBy, sortOrder]);
 
-  // Farmer's priority crop records vs other commodities
+  // Separate records into: Farmer Crops vs Other Mandi Commodities
   const farmerCropRecords = useMemo(() => {
     return sortedRecords.filter(r =>
       farmerCrops.some(fc => fc.toLowerCase() === r.commodity.toLowerCase())
@@ -279,15 +277,15 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
   }, [sortedRecords, farmerCrops]);
 
   const otherRecords = useMemo(() => {
-    return sortedRecords.filter(
-      r => !farmerCrops.some(fc => fc.toLowerCase() === r.commodity.toLowerCase())
+    return sortedRecords.filter(r =>
+      !farmerCrops.some(fc => fc.toLowerCase() === r.commodity.toLowerCase())
     );
   }, [sortedRecords, farmerCrops]);
 
   // Filtered Mandis for search modal
   const filteredMandisModal = useMemo(() => {
     if (!mandiSearchQuery.trim()) return allMandisList;
-    const q = mandiSearchQuery.toLowerCase().trim();
+    const q = mandiSearchQuery.toLowerCase();
     return allMandisList.filter(
       m =>
         m.name.toLowerCase().includes(q) ||
@@ -310,7 +308,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                 {t.navMarketPrices || 'Market Prices'}
               </h1>
               <p className="text-xs text-slate-500 font-medium">
-                Live & daily APMC mandi wholesale rates with automatic nearest market detection
+                {t.marketPricesSubtitle || 'Live & daily APMC mandi wholesale rates with automatic nearest market detection'}
               </p>
             </div>
           </div>
@@ -324,7 +322,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition-all disabled:opacity-60"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh Prices</span>
+            <span>{t.refreshPrices || 'Refresh Prices'}</span>
           </button>
 
           <button
@@ -332,7 +330,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
           >
             <Search className="w-3.5 h-3.5" />
-            <span>Search Mandis</span>
+            <span>{t.searchMandis || 'Search Mandis'}</span>
           </button>
         </div>
       </div>
@@ -346,10 +344,10 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
             </div>
             <div>
               <h3 className="font-extrabold text-base text-white">
-                Detect your farm's nearest mandi automatically
+                {t.searchFarmLocation || 'Detect your farm\'s nearest mandi automatically'}
               </h3>
               <p className="text-xs text-emerald-100 mt-1 max-w-xl">
-                Allow browser location to instantly calculate Haversine distance and fetch real wholesale rates from your closest agricultural market.
+                Allow browser location to instantly calculate driving road distance, travel time, and fetch real wholesale rates from your closest agricultural market.
               </p>
             </div>
           </div>
@@ -360,7 +358,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-emerald-900 font-black text-xs rounded-xl hover:bg-emerald-50 transition-all shadow-md shrink-0 disabled:opacity-75"
           >
             <MapPin className="w-4 h-4 text-emerald-600" />
-            <span>{isDetectingLocation ? 'Detecting Location...' : '📍 Detect My Location'}</span>
+            <span>{isDetectingLocation ? (t.locatingGps || 'Detecting Location...') : `📍 ${t.useCurrentLocation || 'Detect My Location'}`}</span>
           </button>
         </div>
       )}
@@ -391,13 +389,31 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-black tracking-wider uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
-                  📍 Nearest APMC Market
+                  📍 {t.nearestMandi || 'Nearest APMC Market'}
                 </span>
                 {activeMandi?.distance_km !== undefined && activeMandi?.distance_km !== null && (
-                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <Navigation className="w-3 h-3 text-emerald-600" />
-                    {activeMandi.distance_km} km from your farm
-                  </span>
+                  activeMandi?.is_road_distance === false ? (
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
+                      <span>⚠️ Road distance unavailable</span>
+                      <span className="text-slate-500">• Approx. straight-line: {activeMandi.distance_km} km</span>
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-2 shadow-2xs">
+                      <span className="flex items-center gap-1">
+                        <span>🚗</span>
+                        <span>{activeMandi.distance_km} km {t.byRoad || 'by road'}</span>
+                      </span>
+                      {activeMandi.duration_minutes !== undefined && activeMandi.duration_minutes !== null && (
+                        <>
+                          <span className="text-emerald-300">•</span>
+                          <span className="flex items-center gap-1 text-emerald-700">
+                            <span>⏱️</span>
+                            <span>{activeMandi.duration_minutes} min</span>
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  )
                 )}
                 {isLiveSource && (
                   <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -418,7 +434,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                 </span>
                 {farmLocationName && (
                   <span className="text-slate-400">
-                    • Your Farm: <strong className="text-slate-600">{farmLocationName}</strong>
+                    • {t.yourFarm || 'Your Farm'}: <strong className="text-slate-600">{farmLocationName}</strong>
                   </span>
                 )}
               </p>
@@ -433,7 +449,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
             >
               <Navigation className={`w-3.5 h-3.5 text-emerald-600 ${isDetectingLocation ? 'animate-spin' : ''}`} />
-              <span>{isDetectingLocation ? 'Locating...' : 'Update GPS'}</span>
+              <span>{isDetectingLocation ? 'Calculating road distance...' : (t.updateGps || 'Update GPS')}</span>
             </button>
 
             <button
@@ -441,7 +457,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-              <span>Change Mandi</span>
+              <span>{t.changeMandi || 'Change Mandi'}</span>
             </button>
           </div>
         </div>
@@ -452,10 +468,11 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Other Nearby Markets (Switch Mandi)</span>
+                <span>{t.otherNearbyMarkets || 'Other Nearby Markets (Switch Mandi)'}</span>
               </span>
-              <span className="text-[11px] text-slate-400 font-medium">
-                Sorted by Haversine distance
+              <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                <span>🚗</span>
+                <span>{t.sortedByRoadDistance || 'Sorted by road distance'}</span>
               </span>
             </div>
 
@@ -472,22 +489,36 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                         : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-bold'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span className="truncate max-w-[130px]">{nm.name}</span>
-                      <span
-                        className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
-                          isActive
-                            ? 'bg-emerald-700 text-emerald-100'
-                            : 'bg-slate-200/80 text-slate-600'
-                        }`}
-                      >
-                        {nm.distance_km} km
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <span className="truncate max-w-[140px]">{nm.name}</span>
+                      {nm.is_road_distance === false ? (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+                          {nm.distance_km} km straight-line
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1.5 ${
+                            isActive
+                              ? 'bg-emerald-700 text-emerald-100'
+                              : 'bg-slate-200/80 text-slate-700'
+                          }`}
+                        >
+                          <span>🚗 {nm.distance_km} km</span>
+                          {nm.duration_minutes !== undefined && nm.duration_minutes !== null && (
+                            <span>⏱️ {nm.duration_minutes}m</span>
+                          )}
+                        </span>
+                      )}
                     </div>
                   </button>
                 );
               })}
             </div>
+
+            <p className="text-[11px] text-slate-500 font-medium italic pt-1 flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Road distance is calculated from your farm location to the market using available routing data.</span>
+            </p>
           </div>
         )}
       </div>
@@ -502,7 +533,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
               </div>
               <div>
                 <h3 className="font-black text-sm text-slate-900 flex items-center gap-1.5">
-                  <span>💰 Best Nearby Market to Sell ({selectedCrop})</span>
+                  <span>💰 {t.bestMarketToSell || 'Best Nearby Market to Sell'} ({selectedCrop})</span>
                 </h3>
                 <p className="text-xs text-slate-600 font-medium">
                   {bestMarketInsight.recommendation_text}
@@ -523,7 +554,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                 }
                 className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs rounded-xl transition-all shadow-xs shrink-0"
               >
-                <span>View {bestMarketInsight.best_price_market.mandi_name}</span>
+                <span>{t.viewMarket || 'View Market'} ({bestMarketInsight.best_price_market.mandi_name})</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}
@@ -551,13 +582,23 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                         <span className="font-bold text-slate-800 truncate">{c.mandi_name}</span>
                         {isBest && (
                           <span className="text-[9px] font-black bg-emerald-600 text-white px-1.5 py-0.2 rounded">
-                            TOP RATE
+                            {t.topRate || 'TOP RATE'}
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-500 block">
-                        {c.distance_km} km away
-                      </span>
+                      <div className="text-[10px] text-slate-600 font-semibold space-y-0.5 mt-0.5">
+                        <span className="block flex items-center gap-1 flex-wrap">
+                          <span>🚗 {c.distance_km} km {t.byRoad || 'by road'}</span>
+                          {c.duration_minutes !== undefined && c.duration_minutes !== null && (
+                            <span className="text-slate-500">• ⏱️ {c.duration_minutes} min</span>
+                          )}
+                        </span>
+                        {c.estimated_transport_cost_per_qtl !== undefined && (
+                          <span className="text-[9px] text-slate-500 block">
+                            {t.estFreight || 'Est. Freight'}: ~₹{c.estimated_transport_cost_per_qtl}/Qtl
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-2 pt-2 border-t border-slate-100 flex items-baseline justify-between">
@@ -587,7 +628,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-            <span>Select Crop for Market Pricing</span>
+            <span>{t.selectCrop || 'Select Crop for Market Pricing'}</span>
           </h3>
           <span className="text-xs text-slate-500">
             {dataSourceNotice || `Latest available market data: ${lastUpdated}`}
@@ -630,7 +671,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-card">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-              Average Modal Price
+              {t.avgPrice || 'Average Modal Price'}
             </span>
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-2xl font-black text-slate-900">
@@ -639,13 +680,13 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
               <span className="text-xs font-bold text-slate-500">/ Qtl</span>
             </div>
             <span className="text-[11px] font-bold text-emerald-700 block mt-0.5">
-              ≈ ₹{Math.round(summary.average_price / 100)} / kg wholesale
+              ≈ ₹{Math.round(summary.average_price / 100)} / kg {t.wholesaleApprox || 'wholesale'}
             </span>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-card">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-              Highest Traded Rate
+              {t.highestPrice || 'Highest Traded Rate'}
             </span>
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-2xl font-black text-emerald-700">
@@ -660,7 +701,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
 
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-card">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-              Lowest Traded Rate
+              {t.lowestPrice || 'Lowest Traded Rate'}
             </span>
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-2xl font-black text-amber-700">
@@ -675,7 +716,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
 
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-card">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-              Arrival Date & Source
+              {t.lastUpdated || 'Arrival Date & Source'}
             </span>
             <div className="flex items-center gap-1.5 mt-1">
               <Calendar className="w-4 h-4 text-emerald-600" />
@@ -696,7 +737,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
           <Sparkles className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
           <div>
             <span className="font-extrabold block text-emerald-950 mb-0.5">
-              Market Intelligence Advisory:
+              {t.aiMarketInsightTitle || 'Market Intelligence Advisory'}:
             </span>
             <span>{aiInsight}</span>
           </div>
@@ -706,7 +747,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
       {/* 8. Price Cards / Table Header with View Switcher */}
       <div className="flex items-center justify-between gap-4 pt-2">
         <h3 className="font-black text-base text-slate-900">
-          Available Commodities at {activeMandi?.name || 'Selected Mandi'} ({records.length})
+          {t.allMarketCommodities || 'Available Commodities'} ({records.length})
         </h3>
 
         <div className="flex items-center gap-2">
@@ -719,7 +760,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Cards
+              {t.cardsView || 'Cards'}
             </button>
             <button
               onClick={() => setViewMode('table')}
@@ -729,7 +770,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Table
+              {t.tableView || 'Table'}
             </button>
           </div>
         </div>
@@ -740,7 +781,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-card space-y-3">
           <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin mx-auto" />
           <h4 className="font-extrabold text-sm text-slate-800">
-            Calculating nearest mandi & fetching real market rates...
+            {t.loadingPrices || 'Calculating nearest mandi & fetching real market rates...'}
           </h4>
           <p className="text-xs text-slate-500">
             Evaluating geographic distances and verified APMC commodity trading prices.
@@ -750,7 +791,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-card space-y-3">
           <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
           <h4 className="font-extrabold text-sm text-slate-800">
-            Market found, but latest price data is currently unavailable for this filter.
+            {t.noMarketData || 'Market found, but latest price data is currently unavailable for this filter.'}
           </h4>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
             Try switching to another nearby mandi (e.g. Bowenpally, Enumamula, Gudimalkapur) or selecting a different crop.
@@ -760,7 +801,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs"
           >
             <Search className="w-3.5 h-3.5" />
-            <span>Search Other Mandis</span>
+            <span>{t.searchMandis || 'Search Mandis'}</span>
           </button>
         </div>
       ) : viewMode === 'cards' ? (
@@ -771,7 +812,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Your Cultivated Crops (Priority)</span>
+                  <span>{t.yourCrops || 'Your Cultivated Crops (Priority)'}</span>
                 </span>
                 <span className="text-[11px] text-slate-400 font-semibold">
                   From your farmer profile
@@ -780,7 +821,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {farmerCropRecords.map((r, idx) => (
-                  <MarketPriceCard key={`farmer-${idx}`} record={r} isFarmerCrop={true} />
+                  <MarketPriceCard key={`farmer-${idx}`} record={r} isFarmerCrop={true} language={language} />
                 ))}
               </div>
             </div>
@@ -792,14 +833,14 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
               {farmerCropRecords.length > 0 && (
                 <div className="border-t border-slate-200/80 pt-4 flex items-center justify-between">
                   <span className="text-xs font-black text-slate-600 uppercase tracking-wider">
-                    All Market Commodities
+                    {t.allMarketCommodities || 'All Market Commodities'}
                   </span>
                 </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {otherRecords.map((r, idx) => (
-                  <MarketPriceCard key={`other-${idx}`} record={r} isFarmerCrop={false} />
+                  <MarketPriceCard key={`other-${idx}`} record={r} isFarmerCrop={false} language={language} />
                 ))}
               </div>
             </div>
@@ -811,6 +852,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
           sortBy={sortBy}
           sortOrder={sortOrder}
           onSort={handleSort}
+          language={language}
         />
       )}
 
@@ -823,7 +865,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
             </div>
             <div>
               <h4 className="font-extrabold text-sm text-slate-900">
-                Price Trend History: {selectedCrop}
+                {t.priceTrendHistory || 'Price Trend History'}: {selectedCrop}
               </h4>
               <p className="text-xs text-slate-500">
                 Modal price movement across previous trading cycles
@@ -840,7 +882,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              7 Days
+              {t.days7 || '7 Days'}
             </button>
             <button
               onClick={() => setTrendDays(30)}
@@ -850,7 +892,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              30 Days
+              {t.days30 || '30 Days'}
             </button>
           </div>
         </div>
@@ -907,7 +949,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-base text-slate-900">
-                    Indian APMC Mandi Directory
+                    {t.marketCatalog || 'Indian APMC Mandi Directory'}
                   </h3>
                   <p className="text-xs text-slate-500">
                     Search across verified agricultural markets by name, district, or state
@@ -928,7 +970,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search market (e.g. Shamshabad, Bowenpally, Warangal, Kolar, Madanapalle, Guntur)..."
+                placeholder={t.searchMarketPlaceholder || "Search market (e.g. Shamshabad, Bowenpally, Warangal, Kolar, Madanapalle, Guntur)..."}
                 value={mandiSearchQuery}
                 onChange={(e) => setMandiSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -940,7 +982,7 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
             <div className="overflow-y-auto space-y-2 pr-1 flex-1">
               {filteredMandisModal.length === 0 ? (
                 <div className="text-center py-8 text-slate-500 text-xs">
-                  No matching APMC markets found for "{mandiSearchQuery}".
+                  {t.noResults || 'No matching APMC markets found.'}
                 </div>
               ) : (
                 filteredMandisModal.map((m) => {
@@ -971,13 +1013,13 @@ export const MarketPricesPage: React.FC<MarketPricesPageProps> = ({
 
                       <div className="text-right shrink-0">
                         {m.distance_km !== undefined && m.distance_km !== null ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">
-                            <Navigation className="w-3 h-3" />
-                            {m.distance_km} km
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
+                            <span>🚗</span>
+                            <span>{m.formatted_distance || `${m.distance_km} km ${t.byRoad || 'by road'}`}</span>
                           </span>
                         ) : (
                           <span className="text-[11px] font-bold text-slate-400">
-                            Select Mandi
+                            {t.selectMarket || 'Select Mandi'}
                           </span>
                         )}
                       </div>

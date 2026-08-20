@@ -6,7 +6,7 @@ import {
   CloudSun,
   TrendingUp,
   MessageSquare,
-  History,
+  Landmark,
   Newspaper,
   Tractor,
   UserCircle,
@@ -36,15 +36,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     { id: 'dashboard', label: t.navDashboard, icon: LayoutDashboard },
-    { id: 'detect', label: 'Disease Detection', icon: ScanLine, badge: '5-Step' },
-    { id: 'advisory', label: 'Crop Advisory', icon: BookOpen },
-    { id: 'weather', label: 'Weather & Risk', icon: CloudSun },
-    { id: 'market-prices', label: 'Market Prices', icon: TrendingUp },
-    { id: 'assistant', label: 'AI Assistant', icon: MessageSquare, badge: 'Voice' },
-    { id: 'history', label: 'Crop History', icon: History },
-    { id: 'news', label: 'Market News', icon: Newspaper },
-    { id: 'resources', label: 'Farm Resources', icon: Tractor },
-    { id: 'profile', label: 'My Profile', icon: UserCircle },
+    { id: 'detect', label: t.navDiseaseDetection || 'Disease Detection', icon: ScanLine, badge: '5-Step' },
+    { id: 'advisory', label: t.navCropAdvisory || 'Crop Advisory', icon: BookOpen },
+    { id: 'weather', label: t.navWeatherRisk || 'Weather & Risk', icon: CloudSun },
+    { id: 'market-prices', label: t.navMarketPrices || 'Market Prices', icon: TrendingUp },
+    { id: 'assistant', label: t.navAssistant || 'AI Assistant', icon: MessageSquare, badge: 'Voice' },
+    { id: 'schemes', label: t.navGovtSchemes || 'Govt Schemes', icon: Landmark, badge: 'Subsidies' },
+    { id: 'news', label: t.navMarketNews || 'Market News', icon: Newspaper },
+    { id: 'resources', label: t.navFarmResources || 'Farm Resources', icon: Tractor },
+    { id: 'profile', label: t.navMyProfile || 'My Profile', icon: UserCircle },
   ];
 
   return (
@@ -83,7 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Navigation Links */}
           <div className="space-y-1">
             <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
-              Modules
+              {t.modules || 'Modules'}
             </p>
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -132,12 +132,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-4 border-t border-slate-100 bg-slate-50/50 m-3 rounded-2xl border">
           <div className="flex items-center gap-2 text-emerald-800 font-extrabold text-xs">
             <PhoneCall className="w-3.5 h-3.5" />
-            <span>Kisan Call Center</span>
+            <span>{t.kisanCallCenter || 'Kisan Call Center'}</span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5 font-semibold">Toll Free: 1800-180-1551</p>
+          <p className="text-[11px] text-slate-500 mt-0.5 font-semibold">{t.tollFree || 'Toll Free'}: 1800-180-1551</p>
           <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-400">
             <span>AgriCare AI v2.4</span>
-            <span className="text-emerald-600 font-bold">● Online</span>
+            <span className="text-emerald-600 font-bold">● {t.online || 'Online'}</span>
           </div>
         </div>
       </aside>

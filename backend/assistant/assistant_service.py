@@ -261,7 +261,69 @@ def process_assistant_query(
 
         return {"response": reply, "topic": "weather", "language": lang}
 
-    # 4. Fallback: If only a crop name was mentioned without specifics, show its market price summary
+    # 4. Check if user is asking about Government Schemes & Subsidies
+    scheme_keywords = [
+        "scheme", "subsidy", "subsidies", "pm kisan", "pm-kisan", "kcc", "kisan credit card", "loan", "crop loan",
+        "insurance", "pmfby", "kusum", "solar pump", "drip", "assistance", "support", "rythu bandhu", "rythu bima",
+        "eligible", "eligibility",
+        "పథకాలు", "పథకం", "సబ్సిడీ", "రైతు బంధు", "రైతు భరోసా", "రుణాలు", "రుణ", "బీమా", "పీఎం కిసాన్", "రైతు బీమా", "సోలార్", "డ్రిప్", "అర్హత",
+        "योजना", "योजनाएं", "सब्सिडी", "पीएम किसान", "ऋण", "बीमा", "लोन", "सोलर", "ड्रिप", "पात्रता", "सरकारी योजना"
+    ]
+    if any(kw in msg_clean for kw in scheme_keywords):
+        try:
+            from schemes.schemes_service import get_schemes_list
+        except ImportError:
+            from ..schemes.schemes_service import get_schemes_list
+
+        loc_parts = [p.strip() for p in location.split(",") if p.strip()]
+        state_name = loc_parts[-1] if len(loc_parts) > 1 else (loc_parts[0] if loc_parts else "Telangana")
+        dist_name = loc_parts[0] if len(loc_parts) > 1 else "Warangal"
+
+        schemes_data = get_schemes_list(
+            state=state_name,
+            district=dist_name,
+            crops=detected_crop or "Paddy, Tomato, Cotton, Chilli"
+        )
+        schemes = schemes_data.get("schemes", [])
+        top_schemes = schemes[:4]
+
+        if lang == "te":
+            scheme_lines = []
+            for s in top_schemes:
+                scheme_lines.append(f"• {s['title']} ({s['category']}): {s['benefits'][:80]}...")
+            scheme_text = "\n\n".join(scheme_lines)
+
+            reply = (
+                f"🏦 {state_name} రాష్ట్ర రైతులకు అందుబాటులో ఉన్న ముఖ్యమైన ప్రభుత్వ పథకాలు & సబ్సిడీలు:\n\n"
+                f"{scheme_text}\n\n"
+                f"🔍 పూర్తి వివరాలు మరియు అర్హత తనిఖీ కోసం 'Government Schemes & Subsidies' పేజీని చూడండి."
+            )
+        elif lang == "hi":
+            scheme_lines = []
+            for s in top_schemes:
+                scheme_lines.append(f"• {s['title']} ({s['category']}): {s['benefits'][:80]}...")
+            scheme_text = "\n\n".join(scheme_lines)
+
+            reply = (
+                f"🏦 {state_name} के किसानों के लिए प्रमुख सरकारी योजनाएं एवं सब्सिडी विवरण:\n\n"
+                f"{scheme_text}\n\n"
+                f"🔍 विस्तृत जानकारी एवं पात्रता जांच के लिए 'Government Schemes & Subsidies' पेज देखें।"
+            )
+        else:
+            scheme_lines = []
+            for s in top_schemes:
+                scheme_lines.append(f"• {s['title']} ({s['category']}): {s['benefits'][:90]}...")
+            scheme_text = "\n\n".join(scheme_lines)
+
+            reply = (
+                f"🏦 Government Schemes & Subsidies for Farmers in {state_name}:\n\n"
+                f"{scheme_text}\n\n"
+                f"🔍 To check detailed eligibility, required documents, and official portal links, visit the 'Government Schemes & Subsidies' section."
+            )
+
+        return {"response": reply, "topic": "schemes", "language": lang}
+
+    # 5. Fallback: If only a crop name was mentioned without specifics, show its market price summary
     if detected_crop:
         market_info = get_market_prices(crop=detected_crop)
         summary = market_info.get("summary", {})

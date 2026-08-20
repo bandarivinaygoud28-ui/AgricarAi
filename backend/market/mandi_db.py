@@ -659,8 +659,8 @@ MANDI_PRICE_PROFILES: Dict[str, Dict[str, Dict[str, Any]]] = {
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """
-    Computes accurate geodesic distance between two GPS coordinates (in km)
-    using the Haversine formula.
+    Computes geodesic straight-line distance between two GPS coordinates (in km)
+    using the Haversine formula. Used as coarse pre-filter.
     """
     R = 6371.0 # Earth's radius in kilometers
     dlat = math.radians(lat2 - lat1)
@@ -678,22 +678,13 @@ def find_nearest_mandi(
     state_filter: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Finds the nearest verified APMC/vegetable mandi to the farmer's GPS coordinates.
+    Finds the nearest verified APMC/vegetable mandi to the farmer's GPS coordinates
+    strictly sorted by actual driving ROAD distance.
     """
-    mandis_with_dist = []
-    for m in ALL_MANDIS:
-        dist = haversine_distance(lat, lon, m["lat"], m["lon"])
-        m_copy = dict(m)
-        m_copy["distance_km"] = dist
-        mandis_with_dist.append(m_copy)
-
-    mandis_with_dist.sort(key=lambda x: x["distance_km"])
-
-    if not mandis_with_dist:
-        # Fallback default
-        return ALL_MANDIS[0]
-
-    return mandis_with_dist[0]
+    nearby = get_nearby_mandis(lat, lon, limit=1)
+    if nearby:
+        return nearby[0]
+    return ALL_MANDIS[0]
 
 
 def get_nearby_mandis(
@@ -702,14 +693,49 @@ def get_nearby_mandis(
     limit: int = 6
 ) -> List[Dict[str, Any]]:
     """
-    Returns list of mandis sorted strictly by geographic distance from the farmer.
+    Returns list of mandis sorted strictly by driving ROAD distance from the farmer.
+    Calculates actual road kilometers and travel duration via routing engine.
     """
-    mandis_with_dist = []
-    for m in ALL_MANDIS:
-        dist = haversine_distance(lat, lon, m["lat"], m["lon"])
-        m_copy = dict(m)
-        m_copy["distance_km"] = dist
-        mandis_with_dist.append(m_copy)
+    try:
+        from market.routing_service import batch_calculate_road_distances
+    except ImportError:
+        try:
+            from .routing_service import batch_calculate_road_distances
+        except ImportError:
+            batch_calculate_road_distances = None
 
-    mandis_with_dist.sort(key=lambda x: x["distance_km"])
-    return mandis_with_dist[:limit]
+    # Step 1: Pre-filter candidate mandis using coarse radius to optimize routing
+    candidates = []
+    for m in ALL_MANDIS:
+        m_lat, m_lon = m.get("lat"), m.get("lon")
+        if m_lat is not None and m_lon is not None:
+            coarse_dist = haversine_distance(lat, lon, m_lat, m_lon)
+            m_copy = dict(m)
+            m_copy["_coarse_dist"] = coarse_dist
+            candidates.append(m_copy)
+
+    candidates.sort(key=lambda x: x["_coarse_dist"])
+    top_candidates = candidates[:max(limit * 2, 12)]
+
+    # Step 2: Compute actual driving road distance for candidates
+    if batch_calculate_road_distances:
+        resolved_mandis = batch_calculate_road_distances(lat, lon, top_candidates)
+    else:
+        resolved_mandis = []
+        for m in top_candidates:
+            m_copy = dict(m)
+            m_copy["distance_km"] = m_copy.get("_coarse_dist", 0.0)
+            m_copy["is_road_distance"] = False
+            m_copy["distance_type"] = "straight_line"
+            m_copy["formatted_distance"] = f"Approx. {m_copy['distance_km']} km straight-line"
+            m_copy["distance_label"] = "Approx. straight-line distance"
+            resolved_mandis.append(m_copy)
+
+    # Step 3: Sort strictly by actual road distance (distance_km)
+    resolved_mandis.sort(key=lambda x: x.get("distance_km") if x.get("distance_km") is not None else 99999)
+
+    # Clean up internal pre-filter key
+    for m in resolved_mandis:
+        m.pop("_coarse_dist", None)
+
+    return resolved_mandis[:limit]

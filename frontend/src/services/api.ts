@@ -12,7 +12,9 @@ import {
   NewsResponse,
   FarmResource,
   BookingRecord,
-  LanguageCode
+  LanguageCode,
+  GovernmentScheme,
+  SchemesResponse
 } from '../types';
 
 const LOCAL_API = 'http://localhost:8000/api';
@@ -216,6 +218,27 @@ export const api = {
 
     const res = await fetch(`${API_BASE}/market-prices/mandis?${query.toString()}`);
     if (!res.ok) throw new Error('Failed to search mandis');
+    return res.json();
+  },
+
+  // Voice AI & Cloud Neural Speech
+  async synthesizeVoice(text: string, language: string = 'te-IN', signal?: AbortSignal): Promise<Blob> {
+    const res = await fetch(`${API_BASE}/voice/synthesize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ text, language }),
+      signal
+    });
+    if (!res.ok) {
+      const errDetail = await res.text().catch(() => 'Voice service unavailable');
+      throw new Error(errDetail || 'Voice synthesis service unavailable');
+    }
+    return res.blob();
+  },
+
+  async getVoiceInfo(language: string = 'te-IN'): Promise<any> {
+    const res = await fetch(`${API_BASE}/voice/info?language=${encodeURIComponent(language)}`);
+    if (!res.ok) throw new Error('Failed to get voice info');
     return res.json();
   },
 
@@ -447,6 +470,49 @@ export const api = {
   async getVoiceInfo(language: string = 'te-IN'): Promise<{ language: string; voice_name: string; provider: string; is_available: boolean }> {
     const res = await fetch(`${API_BASE}/voice/info?language=${encodeURIComponent(language)}`);
     if (!res.ok) throw new Error('Failed to fetch voice info');
+    return res.json();
+  },
+
+  // Government Schemes & Subsidies
+  async getGovernmentSchemes(params: {
+    state?: string;
+    district?: string;
+    crops?: string;
+    land_area?: number;
+    category?: string;
+    search?: string;
+    scope?: string;
+  } = {}): Promise<SchemesResponse> {
+    const query = new URLSearchParams();
+    if (params.state) query.append('state', params.state);
+    if (params.district) query.append('district', params.district);
+    if (params.crops) query.append('crops', params.crops);
+    if (params.land_area !== undefined && params.land_area !== null) query.append('land_area', String(params.land_area));
+    if (params.category) query.append('category', params.category);
+    if (params.search) query.append('search', params.search);
+    if (params.scope) query.append('scope', params.scope);
+
+    const fetchWithFallback = async (base: string): Promise<SchemesResponse> => {
+      const res = await fetch(`${base}/schemes?${query.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch government schemes');
+      return res.json();
+    };
+
+    try {
+      return await fetchWithFallback(API_BASE);
+    } catch (primaryErr) {
+      const fallbackBase = API_BASE === LOCAL_API ? REMOTE_API : LOCAL_API;
+      try {
+        return await fetchWithFallback(fallbackBase);
+      } catch {
+        throw primaryErr;
+      }
+    }
+  },
+
+  async getSchemeDetails(schemeId: string): Promise<GovernmentScheme> {
+    const res = await fetch(`${API_BASE}/schemes/${encodeURIComponent(schemeId)}`);
+    if (!res.ok) throw new Error('Failed to fetch scheme details');
     return res.json();
   },
 

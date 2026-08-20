@@ -189,6 +189,16 @@ def test_all():
     voice_info = client.get("/api/voice/info?language=te-IN")
     check("GET /api/voice/info", voice_info.status_code == 200 and voice_info.json().get("is_available") is True)
 
+    # 18. Government Schemes & Subsidies API
+    schemes_res = client.get("/api/schemes?state=Telangana&district=Ranga%20Reddy&crops=Paddy,Tomato,Cotton,Chilli&land_area=5")
+    check("GET /api/schemes (List & Prioritization)", schemes_res.status_code == 200 and schemes_res.json().get("total_schemes", 0) > 10)
+    
+    scheme_detail = client.get("/api/schemes/pm-kisan")
+    check("GET /api/schemes/pm-kisan (Details)", scheme_detail.status_code == 200 and "pmkisan.gov.in" in scheme_detail.json().get("official_url", ""))
+
+    schemes_filter = client.get("/api/schemes?category=Irrigation")
+    check("GET /api/schemes (Category Filter)", schemes_filter.status_code == 200 and any("Irrigation" in s.get("category", "") for s in schemes_filter.json().get("schemes", [])))
+
     print("========================================")
     print(f"ALL TESTS PASSED: {passed}/{total} (100% Success)")
     print("========================================")

@@ -16,7 +16,7 @@ import {
   Wind,
   Thermometer,
   Activity,
-  History,
+  Landmark,
   Sparkles
 } from 'lucide-react';
 import { LanguageCode } from '../types';
@@ -369,17 +369,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-card space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Health History</span>
-              <History className="w-4 h-4 text-blue-600" />
+              <span className="text-[11px] font-bold uppercase tracking-wider">Govt Schemes</span>
+              <Landmark className="w-4 h-4 text-emerald-700" />
             </div>
-            <p className="text-2xl font-black text-slate-900">
-              {recentScans.length > 0 ? recentScans.length : '14'}
+            <p className="text-sm font-black text-slate-900 leading-tight">
+              Schemes & Subsidies
+            </p>
+            <p className="text-[11px] text-slate-500 line-clamp-1">
+              Income, loans & solar pumps
             </p>
             <button
-              onClick={() => onNavigate('history')}
-              className="text-[11px] font-bold text-emerald-700 hover:underline flex items-center gap-1"
+              onClick={() => onNavigate('schemes')}
+              className="text-[11px] font-bold text-emerald-700 hover:underline flex items-center gap-1 pt-0.5"
             >
-              <span>View All Records →</span>
+              <span>Check My Eligibility →</span>
             </button>
           </div>
         </div>

@@ -42,6 +42,10 @@ export interface MandiInfo {
   lat: number;
   lon: number;
   distance_km?: number;
+  formatted_distance?: string;
+  distance_label?: string;
+  is_road_distance?: boolean;
+  duration_minutes?: number;
   apmc_code?: string;
 }
 
@@ -51,6 +55,10 @@ export interface NearbyMarketOption {
   district: string;
   state: string;
   distance_km: number;
+  formatted_distance?: string;
+  distance_label?: string;
+  is_road_distance?: boolean;
+  duration_minutes?: number;
 }
 
 export interface BestMarketComparisonItem {
@@ -59,11 +67,17 @@ export interface BestMarketComparisonItem {
   district: string;
   state: string;
   distance_km: number;
+  formatted_distance?: string;
+  distance_label?: string;
+  is_road_distance?: boolean;
+  duration_minutes?: number;
   modal_price: number;
   price_per_kg: number;
   min_price: number;
   max_price: number;
   variety: string;
+  estimated_transport_cost_per_qtl?: number;
+  net_realized_price?: number;
 }
 
 export interface BestMarketInsight {
@@ -75,8 +89,11 @@ export interface BestMarketInsight {
   price_difference_per_quintal?: number;
   price_difference_per_kg?: number;
   extra_distance_km?: number;
+  extra_transport_cost_per_qtl?: number;
+  net_gain_per_qtl?: number;
   recommendation_text?: string;
   disclaimer?: string;
+  routing_explanation?: string;
   comparisons?: BestMarketComparisonItem[];
 }
 
@@ -93,6 +110,10 @@ export interface MarketPriceRecord {
   price_type?: string;
   unit: string;
   distance_km?: number;
+  formatted_distance?: string;
+  distance_label?: string;
+  is_road_distance?: boolean;
+  duration_minutes?: number;
   arrival_date: string;
 }
 
@@ -307,3 +328,44 @@ export interface ChatMessage {
   timestamp: string;
   diagnosis_context?: Partial<DiseaseScanResult>;
 }
+
+export interface GovernmentScheme {
+  id: string;
+  title: string;
+  short_name: string;
+  category: string;
+  scope: 'Central' | 'State' | string;
+  state: string;
+  target_crops: string[];
+  max_land_limit?: number | null;
+  description: string;
+  benefits: string;
+  eligibility_summary: string;
+  required_documents: string[];
+  department: string;
+  application_process: string;
+  official_url: string;
+  official_source: string;
+  last_verified: string;
+  is_verified: boolean;
+  tags: string[];
+  eligibility_status?: string;
+  eligibility_code?: 'likely' | 'check' | 'info' | string;
+  eligibility_badge_color?: 'green' | 'yellow' | 'gray' | string;
+  relevance_reason?: string;
+  priority_score?: number;
+}
+
+export interface SchemesResponse {
+  farmer_context: {
+    state: string;
+    district: string;
+    crops: string[];
+    land_area?: number | null;
+  };
+  total_schemes: number;
+  recommended_count: number;
+  schemes: GovernmentScheme[];
+  last_verified_all: string;
+}
+
