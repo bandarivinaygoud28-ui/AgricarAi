@@ -7,15 +7,35 @@ import {
   OwnerRatingsSummary
 } from '../types';
 
-// Normalize API Base URL so that http://localhost:8000 or http://localhost:8000/api both resolve cleanly
-const RAW_API =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_BASE ||
-  (typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:8000'
-    : 'https://hv2026-0051-vortex-backend.onrender.com');
+// Deployed FastAPI backend on Render
+const DEPLOYED_BACKEND_URL = 'https://agricare-resource-owner-api.onrender.com';
+const LOCAL_BACKEND_URL = 'http://localhost:8000';
 
+function getInitialApiBase(): string {
+  const envUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || '').trim();
+  const isBrowser = typeof window !== 'undefined';
+  const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  // If in local development
+  if (isLocalhost) {
+    return envUrl || LOCAL_BACKEND_URL;
+  }
+
+  // If in production / deployed environment
+  if (isBrowser) {
+    // If envUrl is set and is NOT a localhost URL, use it
+    if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+      return envUrl;
+    }
+    // Fallback to deployed Render backend
+    return DEPLOYED_BACKEND_URL;
+  }
+
+  // Build time fallback
+  return envUrl || DEPLOYED_BACKEND_URL;
+}
+
+// Normalize API Base URL so that with or without trailing /api both resolve cleanly
 function normalizeApiBase(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '');
   if (trimmed.endsWith('/api')) {
@@ -24,7 +44,7 @@ function normalizeApiBase(url: string): string {
   return `${trimmed}/api`;
 }
 
-export const API_BASE = normalizeApiBase(RAW_API);
+export const API_BASE = normalizeApiBase(getInitialApiBase());
 
 function getAuthHeader(): Record<string, string> {
   const token = localStorage.getItem('agricare_owner_token');
@@ -38,7 +58,7 @@ async function safeFetch(url: string, options: RequestInit = {}): Promise<Respon
   } catch (err: any) {
     if (err.name === 'TypeError' && err.message?.toLowerCase().includes('failed to fetch')) {
       throw new Error(
-        `Unable to connect to backend server at ${API_BASE}. Please ensure the FastAPI backend is running on http://localhost:8000.`
+        `Unable to connect to backend server at ${API_BASE}. Please ensure the backend server is active and reachable.`
       );
     }
     throw err;
