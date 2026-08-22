@@ -18,7 +18,7 @@ import {
 } from '../types';
 
 const LOCAL_API = 'http://localhost:8000/api';
-const REMOTE_API = 'https://hv2026-0051-vortex-backend.onrender.com/api';
+const REMOTE_API = 'https://agricare-resource-owner-api.onrender.com/api';
 const API_BASE =
   import.meta.env.VITE_API_BASE ||
   (typeof window !== 'undefined' && window.location.hostname === 'localhost'
@@ -33,7 +33,7 @@ function getAuthHeader(): Record<string, string> {
 export const api = {
   // Auth & Profile
   async login(phone: string, password: string) {
-    const res = await fetch(`${API_BASE}/login`, {
+    const res = await fetch(`${API_BASE}/owner/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, password })
