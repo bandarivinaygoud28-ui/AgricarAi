@@ -787,15 +787,76 @@ export const api = {
     return res.json();
   },
 
-  async getBookings(farmer_id?: number, phone?: string): Promise<BookingRecord[]> {
+  async getBookings(farmer_id?: number, phone?: string, status?: string): Promise<BookingRecord[]> {
     const query = new URLSearchParams();
     if (farmer_id) query.append('farmer_id', String(farmer_id));
     if (phone) query.append('phone', phone);
+    if (status) query.append('status', status);
 
     const res = await fetch(`${API_BASE}/resources/bookings?${query.toString()}`, {
       headers: { ...getAuthHeader() }
     });
     if (!res.ok) throw new Error('Failed to fetch bookings');
     return res.json();
+  },
+
+  // Owner Resource Management Methods
+  async getOwnerStats(ownerPhone?: string): Promise<any> {
+    const query = new URLSearchParams();
+    if (ownerPhone) query.append('owner_phone', ownerPhone);
+    const res = await fetch(`${API_BASE}/resources/owner/stats?${query.toString()}`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch owner stats');
+    return res.json();
+  },
+
+  async addResource(resourceData: Partial<FarmResource>): Promise<any> {
+    const res = await fetch(`${API_BASE}/resources`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(resourceData)
+    });
+    if (!res.ok) throw new Error('Failed to add farm resource');
+    return res.json();
+  },
+
+  async updateResource(resourceId: number, resourceData: Partial<FarmResource>): Promise<any> {
+    const res = await fetch(`${API_BASE}/resources/${resourceId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(resourceData)
+    });
+    if (!res.ok) throw new Error('Failed to update farm resource');
+    return res.json();
+  },
+
+  async deleteResource(resourceId: number): Promise<any> {
+    const res = await fetch(`${API_BASE}/resources/${resourceId}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to delete farm resource');
+    return res.json();
+  },
+
+  async updateBookingStatus(bookingId: string | number, status: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/resources/bookings/${bookingId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error('Failed to update booking status');
+    return res.json();
+  },
+
+  async cancelBooking(bookingId: string | number): Promise<any> {
+    const res = await fetch(`${API_BASE}/resources/bookings/cancel?booking_id=${encodeURIComponent(String(bookingId))}`, {
+      method: 'POST',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to cancel booking');
+    return res.json();
   }
 };
+
