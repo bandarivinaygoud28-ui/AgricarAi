@@ -17,13 +17,47 @@ import {
   SchemesResponse
 } from '../types';
 
-const LOCAL_API = 'http://localhost:8000/api';
-const REMOTE_API = 'https://agricare-resource-owner-api.onrender.com/api';
-const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? LOCAL_API
-    : REMOTE_API);
+const DEPLOYED_BACKEND_URL = 'https://agricare-resource-owner-api.onrender.com';
+const LOCAL_BACKEND_URL = 'http://localhost:8000';
+export const LOCAL_API = 'http://localhost:8000/api';
+export const REMOTE_API = 'https://agricare-resource-owner-api.onrender.com/api';
+
+function getInitialApiBase(): string {
+  const envUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || '').trim();
+  const isBrowser = typeof window !== 'undefined';
+  const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  // If in local development
+  if (isLocalhost) {
+    return envUrl || LOCAL_BACKEND_URL;
+  }
+
+  // If in production / deployed environment (e.g. on Vercel)
+  if (isBrowser) {
+    // If envUrl is set and is NOT a localhost URL and not an old legacy host, use it
+    if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1') && !envUrl.includes('hv2026-0051-vortex-backend')) {
+      return envUrl;
+    }
+    // Fallback to deployed Render backend
+    return DEPLOYED_BACKEND_URL;
+  }
+
+  // Build time fallback
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1') && !envUrl.includes('hv2026-0051-vortex-backend')) {
+    return envUrl;
+  }
+  return DEPLOYED_BACKEND_URL;
+}
+
+function normalizeApiBase(url: string): string {
+  const trimmed = url.trim().replace(/\/+$/, '');
+  if (trimmed.endsWith('/api')) {
+    return trimmed;
+  }
+  return `${trimmed}/api`;
+}
+
+export const API_BASE = normalizeApiBase(getInitialApiBase());
 
 function getAuthHeader(): Record<string, string> {
   const token = localStorage.getItem('agricare_token');
@@ -753,14 +787,81 @@ export const api = {
   async getResources(params: {
     resource_type?: string;
     location?: string;
-  }): Promise<FarmResource[]> {
+  } = {}): Promise<FarmResource[]> {
     const query = new URLSearchParams();
-    if (params.resource_type) query.append('resource_type', params.resource_type);
-    if (params.location) query.append('location', params.location);
+    if (params.resource_type && params.resource_type !== 'All') {
+      query.append('resource_type', params.resource_type);
+    }
+    if (params.location) {
+      query.append('location', params.location);
+    }
 
-    const res = await fetch(`${API_BASE}/resources?${query.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch resources');
-    return res.json();
+    const fetchWithFallback = async (base: string): Promise<FarmResource[]> => {
+      const qs = query.toString();
+      const apiUrl = `${base}/resources${qs ? `?${qs}` : ''}`;
+      console.log("PRODUCTION RESOURCE API URL:", apiUrl);
+      const res = await fetch(apiUrl);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch resources (${res.status})`);
+      }
+      const rawData = await res.json();
+      console.log("Farmer resources API:", rawData);
+
+      const backendRoot = base.replace(/\/api\/?$/, '');
+      const mapped: FarmResource[] = (Array.isArray(rawData) ? rawData : []).map((item: any) => {
+        let img = item.image_url || item.image || '';
+        if (img && img.startsWith('/')) {
+          img = `${backendRoot}${img}`;
+        }
+        return {
+          id: item.id,
+          resource_type: item.resource_type || item.type || item.category || 'Equipment',
+          type: item.type || item.resource_type || 'Equipment',
+          category: item.category || 'Farm Machinery',
+          title: item.title || item.name || 'Farm Equipment',
+          name: item.name || item.title || 'Farm Equipment',
+          provider_name: item.provider_name || item.ownerName || 'Equipment Owner',
+          ownerName: item.ownerName || item.provider_name || 'Equipment Owner',
+          location: item.location || 'Telangana, India',
+          price: item.price ?? item.price_per_hour ?? 800,
+          price_unit: item.price_unit || 'hour',
+          price_per_hour: item.price_per_hour ?? item.pricePerHour ?? item.price ?? 800,
+          pricePerHour: item.pricePerHour ?? item.price_per_hour ?? item.price ?? 800,
+          price_per_acre: item.price_per_acre ?? item.pricePerAcre ?? 0,
+          pricePerAcre: item.pricePerAcre ?? item.price_per_acre ?? 0,
+          price_per_day: item.price_per_day ?? ((item.price ?? 800) * 8),
+          availability: item.availability || item.status || 'Available',
+          status: item.status || item.availability || 'Available',
+          contact_phone: item.contact_phone || item.ownerMobile || '',
+          ownerMobile: item.ownerMobile || item.contact_phone || '',
+          rating: item.rating ?? 4.8,
+          description: item.description || '',
+          image_url: img || 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
+          image: img || 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
+          specs: item.specs || '',
+          terms: item.terms || '',
+          distance_km: item.distance_km,
+          formatted_distance: item.formatted_distance,
+          google_maps_route_url: item.google_maps_route_url
+        };
+      });
+      console.log("PRODUCTION RESOURCES:", mapped);
+      return mapped;
+    };
+
+    try {
+      return await fetchWithFallback(API_BASE);
+    } catch (primaryErr) {
+      console.warn('Primary resources fetch failed, attempting fallback:', primaryErr);
+      const fallbackBase = API_BASE.includes('render.com')
+        ? 'http://localhost:8000/api'
+        : 'https://agricare-resource-owner-api.onrender.com/api';
+      try {
+        return await fetchWithFallback(fallbackBase);
+      } catch {
+        throw primaryErr;
+      }
+    }
   },
 
   async checkAvailability(resource_id: number, date: string): Promise<any> {

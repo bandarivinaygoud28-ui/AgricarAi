@@ -39,6 +39,8 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
   const t = translations[language];
 
   const [resources, setResources] = useState<FarmResource[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>("All");
   const [activeTab, setActiveTab] = useState<'catalog' | 'my-bookings'>('catalog');
   const [myBookings, setMyBookings] = useState<BookingRecord[]>([]);
@@ -56,13 +58,20 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const fetchResources = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const data = await api.getResources({
         resource_type: selectedType === "All" ? undefined : selectedType
       });
+      console.log("Farmer resources API:", data);
+      console.log("Farmer resources:", data);
       setResources(data);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Error loading resources:", e);
+      setError("Unable to load resources.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -162,7 +171,7 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
           <div className="flex items-center bg-white/10 p-1 rounded-2xl border border-white/20">
             <button
               onClick={() => setActiveTab('catalog')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'catalog' ? 'bg-white text-emerald-950 shadow-md' : 'text-white'
               }`}
             >
@@ -170,7 +179,7 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('my-bookings')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 activeTab === 'my-bookings' ? 'bg-white text-emerald-950 shadow-md' : 'text-white'
               }`}
             >
@@ -187,7 +196,7 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
               <button
                 key={rf}
                 onClick={() => setSelectedType(rf)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   selectedType === rf
                     ? 'bg-white text-emerald-950 shadow-sm'
                     : 'bg-white/15 hover:bg-white/25 text-white'
@@ -202,16 +211,45 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
 
       {/* Catalog View */}
       {activeTab === 'catalog' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {resources.map((res) => (
-            <ResourceCard
-              key={res.id}
-              resource={res}
-              language={language}
-              onBook={handleOpenBookingModal}
-            />
-          ))}
-        </div>
+        <>
+          {isLoading ? (
+            <div className="glass-card p-12 text-center text-slate-600 bg-white rounded-3xl border border-slate-200 space-y-4">
+              <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="font-semibold text-slate-700 text-sm">Loading available resources...</p>
+            </div>
+          ) : error ? (
+            <div className="glass-card p-12 text-center text-slate-600 bg-white rounded-3xl border border-rose-200 space-y-4">
+              <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-xl font-bold">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <p className="font-semibold text-slate-800 text-sm">{error}</p>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">Please check your network connection or verify that the backend server is reachable.</p>
+              <button
+                onClick={fetchResources}
+                className="mt-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+              >
+                Retry
+              </button>
+            </div>
+          ) : resources.length === 0 ? (
+            <div className="glass-card p-12 text-center text-slate-500 bg-white rounded-3xl border border-slate-200 space-y-3">
+              <Tractor className="w-12 h-12 text-slate-300 mx-auto" />
+              <p className="font-semibold text-slate-700">No resources available.</p>
+              <p className="text-xs text-slate-500">There are currently no machinery listings available in this category.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {resources.map((res) => (
+                <ResourceCard
+                  key={res.id}
+                  resource={res}
+                  language={language}
+                  onBook={handleOpenBookingModal}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* My Bookings View */}

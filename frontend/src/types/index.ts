@@ -292,16 +292,33 @@ export interface NewsResponse {
 export interface FarmResource {
   id: number;
   resource_type: string;
+  type?: string;
+  category?: string;
   title: string;
+  name?: string;
   provider_name: string;
+  ownerName?: string;
   location: string;
   price: number;
   price_unit: string;
+  price_per_hour?: number;
+  pricePerHour?: number;
+  price_per_acre?: number;
+  pricePerAcre?: number;
+  price_per_day?: number;
   availability: string;
+  status?: string;
   contact_phone: string;
+  ownerMobile?: string;
   rating: number;
   description: string;
   image_url?: string;
+  image?: string;
+  specs?: string;
+  terms?: string;
+  distance_km?: number;
+  formatted_distance?: string;
+  google_maps_route_url?: string;
 }
 
 export interface BookingRecord {
