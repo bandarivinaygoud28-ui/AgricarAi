@@ -42,13 +42,11 @@ export const AddResourcePage: React.FC<AddResourcePageProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [resourceType, setResourceType] = useState<string>('Tractor');
-  const [title, setTitle] = useState<string>('Mahindra 575 DI (45 HP) Tractor');
-  const [vehicleNumber, setVehicleNumber] = useState<string>('TS 03 AB 4591');
-  const [model, setModel] = useState<string>('575 DI Sarpanch');
+  const [title, setTitle] = useState<string>('');
+  const [vehicleNumber, setVehicleNumber] = useState<string>('');
+  const [model, setModel] = useState<string>('');
   const [year, setYear] = useState<string>('2024');
-  const [description, setDescription] = useState<string>(
-    'Heavy duty 45 HP tractor equipped with 42-blade rotavator, reversible disc plough, and 9-tyne cultivator for rapid soil preparation.'
-  );
+  const [description, setDescription] = useState<string>('');
 
   // Image Upload State
   const [imageUrl, setImageUrl] = useState<string>(
@@ -80,8 +78,8 @@ export const AddResourcePage: React.FC<AddResourcePageProps> = ({
   const [longitude, setLongitude] = useState<number>(user?.longitude || 78.4312);
 
   const [availability, setAvailability] = useState<string>('Available');
-  const [specs, setSpecs] = useState<string>('45 HP Diesel | 42-Blade Rotavator | Dual Clutch');
-  const [terms, setTerms] = useState<string>('Fuel and driver included in hourly rate. Minimum booking 2 hours.');
+  const [specs, setSpecs] = useState<string>('');
+  const [terms, setTerms] = useState<string>('');
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -100,24 +98,26 @@ export const AddResourcePage: React.FC<AddResourcePageProps> = ({
       api.getMyResources().then((list) => {
         const found = list.find((r) => r.id === editResourceId);
         if (found) {
-          setResourceType(found.resource_type);
-          setTitle(found.title);
-          setVehicleNumber(found.vehicle_number || '');
-          setModel(found.model || '');
-          setYear(found.year || '2024');
+          setTitle(found.title || (found as any).name || '');
+          setResourceType(found.resource_type || (found as any).type || 'Tractor');
+          setVehicleNumber((found as any).vehicle_number || '');
+          setModel((found as any).model || '');
+          setYear((found as any).year || '2024');
           setDescription(found.description || '');
-          const existingImg = found.image_url || found.image || getDefaultImageForType(found.resource_type);
-          setImageUrl(existingImg);
-          setImagePreview(existingImg);
-          setPricePerHour(found.price_per_hour || found.price || 800);
-          setPricePerDay(found.price_per_day || (found.price ? found.price * 8 : 6400));
-          setPricePerAcre(found.price_per_acre || 0);
-          setPricePerTrip(found.price_per_trip || 0);
+          const img = found.image_url || found.image || getDefaultImageForType(found.resource_type || 'Tractor');
+          setImageUrl(img);
+          setImagePreview(img);
+          setPricePerHour(Number(found.price_per_hour || found.price || 800));
+          setPricePerDay(Number(found.price_per_day || (found.price ? found.price * 8 : 6400)));
+          setPricePerAcre(Number(found.price_per_acre || 0));
+          setPricePerTrip(Number((found as any).price_per_trip || 0));
           setPriceUnit(found.price_unit || 'hour');
           setVillage(found.village || user?.village || 'Kummarguda');
+          setMandal((found as any).mandal || user?.mandal || 'Shamshabad');
           setDistrict(found.district || user?.district || 'Ranga Reddy');
-          setLatitude(found.latitude || 17.2285);
-          setLongitude(found.longitude || 78.4312);
+          setState(found.state || user?.state || 'Telangana');
+          setLatitude(found.latitude || user?.latitude || 17.2285);
+          setLongitude(found.longitude || user?.longitude || 78.4312);
           setAvailability(found.availability || 'Available');
           setSpecs(found.specs || '');
           setTerms(found.terms || '');
@@ -126,7 +126,7 @@ export const AddResourcePage: React.FC<AddResourcePageProps> = ({
     }
   }, [editResourceId]);
 
-  const handleTypeSelect = (t: typeof RESOURCE_TYPES[0]) => {
+  const handleTypeSelect = (t: (typeof RESOURCE_TYPES)[0]) => {
     setResourceType(t.id);
     setPricePerHour(t.defaultPrice);
     setPricePerDay(t.defaultPrice * 8);
@@ -136,10 +136,6 @@ export const AddResourcePage: React.FC<AddResourcePageProps> = ({
     if (!selectedFile && imageMode === 'upload') {
       setImageUrl(t.defaultImage);
       setImagePreview(t.defaultImage);
-    }
-
-    if (!title || title.includes('Tractor') || title.includes('JCB') || title.includes('Drone')) {
-      setTitle(`${t.label} (${user?.village || 'Local'})`);
     }
   };
 

@@ -1,3 +1,50 @@
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Build and distribution outputs
 dist/
+build/
+*.local
+
+# Environment variables and secrets
 .env
+.env.*
+!.env.example
+
+# Database files and backups
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.backup*
+agricare.db
+backend/agricare.db*
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Uploads & Temporary Media
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Temporary verification and diagnostic scripts
+backend/clean_render_resources.py
+backend/inspect_database_records.py
+backend/test_complete_owner_farmer_flow.py
+backend/test_farmer_owner_association.py
+backend/test_live_system_execution.py
+backend/test_live_server_route.py
+backend/test_owner_resource_flow.py
+backend/test_owner_tractor_verification.py
+backend/test_screenshot_api.py
+backend/test_screenshot_route.py
+backend/test_rapido_uber_verification.py
+backend/scratch_check_prod.py
+backend/verify_deployed_system_live.py
+backend/verify_full_system.py
+

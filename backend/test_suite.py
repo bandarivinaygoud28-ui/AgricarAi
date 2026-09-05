@@ -126,7 +126,41 @@ def test_all():
 
     # 14. Farm Resources & Booking
     res_list = client.get("/api/resources")
-    check("GET /api/resources", res_list.status_code == 200 and len(res_list.json()) > 0)
+    check("GET /api/resources", res_list.status_code == 200 and isinstance(res_list.json(), list))
+    
+    # If database is empty, create a test resource to test availability and booking
+    if len(res_list.json()) == 0:
+        from database.database import get_db
+        from database.models import Resource
+        db = next(get_db())
+        test_r = Resource(
+            title="Test John Deere 5310 Tractor",
+            resource_type="Tractor",
+            vehicle_number="TS 09 AB 1234",
+            model="John Deere 5310",
+            year="2024",
+            description="55 HP Heavy Duty Tractor for soil preparation and haulage.",
+            price=900.0,
+            price_per_hour=900.0,
+            price_per_day=7200.0,
+            price_per_acre=1200.0,
+            price_unit="hour",
+            village="Kummarguda",
+            mandal="Shamshabad",
+            district="Ranga Reddy",
+            state="Telangana",
+            location="Kummarguda, Shamshabad, Ranga Reddy",
+            latitude=17.2285,
+            longitude=78.4312,
+            availability="Available",
+            provider_name="Suresh Rao",
+            contact_phone="+91 98480 99999"
+        )
+        db.add(test_r)
+        db.commit()
+        db.refresh(test_r)
+        res_list = client.get("/api/resources")
+
     first_res = res_list.json()[0]
     
     avail_check = client.get(f"/api/resources/availability?resource_id={first_res['id']}&date=2026-08-20")

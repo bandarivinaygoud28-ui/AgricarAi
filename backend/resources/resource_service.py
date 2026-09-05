@@ -1,10 +1,12 @@
 import os
+import re
 import math
 import random
 import urllib.parse
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 try:
     from database.models import Resource, Booking, User, ResourceRating
@@ -41,309 +43,27 @@ except ImportError:
             }
         batch_calculate_road_distances = None
 
-# Verified demo agricultural resources with realistic Indian pricing and Telangana coordinates
-DEFAULT_RESOURCES = [
-    {
-        "id": 1,
-        "title": "Mahindra 575 DI (45 HP) Tractor",
-        "category": "Tractors",
-        "resource_type": "Tractor",
-        "provider_name": "Ramesh Kumar",
-        "contact_phone": "+91 98765 43210",
-        "location": "Kummarguda, Ranga Reddy, Telangana",
-        "latitude": 17.2285,
-        "longitude": 78.4312,
-        "price": 800.0,
-        "price_unit": "hour",
-        "price_per_hour": 800.0,
-        "price_per_acre": 950.0,
-        "price_per_day": 6500.0,
-        "availability": "Available",
-        "rating": 4.8,
-        "description": "Heavy-duty 45 HP Mahindra tractor equipped with 42-blade rotavator, reversible disc plough, and 9-tyne cultivator for rapid soil preparation, plowing and tillage.",
-        "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
-        "specs": "45 HP 4-Cylinder Diesel Engine | 42-Blade Rotavator | 9-Tyne Cultivator | Power Steering | Dual Clutch",
-        "terms": "Fuel included in rate. Experienced tractor driver provided. Minimum booking 2 hours."
-    },
-    {
-        "id": 2,
-        "title": "John Deere 5050 D (50 HP) Tractor",
-        "category": "Tractors",
-        "resource_type": "Tractor",
-        "provider_name": "Suresh Reddy",
-        "contact_phone": "+91 98490 23456",
-        "location": "Shamshabad, Ranga Reddy, Telangana",
-        "latitude": 17.2530,
-        "longitude": 78.3984,
-        "price": 850.0,
-        "price_unit": "hour",
-        "price_per_hour": 850.0,
-        "price_per_acre": 1000.0,
-        "price_per_day": 7000.0,
-        "availability": "Available",
-        "rating": 4.9,
-        "description": "50 HP high-torque engine with laser land leveler attachment and heavy cultivator for precision water-saving field preparation.",
-        "image_url": "https://images.unsplash.com/photo-1530267981375-f0de937f5f13?w=800&auto=format&fit=crop&q=80",
-        "specs": "50 HP Turbocharged Diesel | Laser Land Leveler | Oil Immersed Disc Brakes | 8 Forward + 4 Reverse Gears",
-        "terms": "Includes driver and laser receiver setup for laser leveling."
-    },
-    {
-        "id": 3,
-        "title": "Sonalika DI 745 III Sikander Tractor",
-        "category": "Tractors",
-        "resource_type": "Tractor",
-        "provider_name": "Venkat Rao",
-        "contact_phone": "+91 94401 23987",
-        "location": "Shadnagar, Telangana",
-        "latitude": 17.0722,
-        "longitude": 78.2081,
-        "price": 750.0,
-        "price_unit": "hour",
-        "price_per_hour": 750.0,
-        "price_per_acre": 900.0,
-        "price_per_day": 6000.0,
-        "availability": "Available",
-        "rating": 4.7,
-        "description": "Powerful 50 HP tractor suitable for deep subsoiler plowing, disc harrowing, and heavy haulage operations.",
-        "image_url": "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=800&auto=format&fit=crop&q=80",
-        "specs": "50 HP HDM Engine | 8-Speed Heavy Transmission | 2000 kg Lift Capacity | Disc Harrow & MB Plough",
-        "terms": "Driver provided. Diesel included in hourly rate."
-    },
-    {
-        "id": 4,
-        "title": "Swaraj 744 FE 4WD Tractor",
-        "category": "Tractors",
-        "resource_type": "Tractor",
-        "provider_name": "Mallesh Goud",
-        "contact_phone": "+91 93901 45678",
-        "location": "Kandukur, Ranga Reddy, Telangana",
-        "latitude": 17.0670,
-        "longitude": 78.4940,
-        "price": 780.0,
-        "price_unit": "hour",
-        "price_per_hour": 780.0,
-        "price_per_acre": 920.0,
-        "price_per_day": 6200.0,
-        "availability": "Busy",
-        "rating": 4.65,
-        "description": "4-Wheel-Drive Swaraj tractor specially configured for muddy wetland puddling, sugarcane field operations, and cotton tillage.",
-        "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
-        "specs": "48 HP 4WD | Dual Clutch | Multispeed Reverse PTO | Cage Wheels for Puddling",
-        "terms": "Currently occupied on field work. Booking opens from tomorrow."
-    },
-    {
-        "id": 5,
-        "title": "JCB 3DX Super Eco Earthmover & Trencher",
-        "category": "JCB / Earthmovers",
-        "resource_type": "JCB / Earthmover",
-        "provider_name": "Naresh Yadav",
-        "contact_phone": "+91 90123 45678",
-        "location": "Maheshwaram, Ranga Reddy, Telangana",
-        "latitude": 17.1350,
-        "longitude": 78.4330,
-        "price": 1200.0,
-        "price_unit": "hour",
-        "price_per_hour": 1200.0,
-        "price_per_acre": 0.0,
-        "price_per_day": 9500.0,
-        "availability": "Available",
-        "rating": 4.75,
-        "description": "Versatile JCB backhoe loader for farm pond excavation, field bund leveling, drainage canal digging, rock clearing, and farm road maintenance.",
-        "image_url": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-        "specs": "76 HP Turbo Diesel Engine | 0.26 m³ Excavator Bucket | 1.1 m³ Front Loader | Max Dig Depth 4.77m",
-        "terms": "Includes experienced heavy equipment operator and diesel. 2 hour minimum."
-    },
-    {
-        "id": 6,
-        "title": "Kubota DC-68G Multi-Crop Combine Harvester",
-        "category": "Harvesters",
-        "resource_type": "Combine Harvester",
-        "provider_name": "Telangana Farm Machines",
-        "contact_phone": "+91 99887 66554",
-        "location": "Shadnagar, Telangana",
-        "latitude": 17.0722,
-        "longitude": 78.2081,
-        "price": 2500.0,
-        "price_unit": "hour",
-        "price_per_hour": 2500.0,
-        "price_per_acre": 2800.0,
-        "price_per_day": 22000.0,
-        "availability": "Available",
-        "rating": 4.85,
-        "description": "Rubber crawler track combine harvester suitable for wet paddy, maize, wheat, and soybean harvesting with minimal grain loss (<1%) and clean grain separation.",
-        "image_url": "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80",
-        "specs": "68 HP High-Torque Diesel | 2-Meter Cutter Bar | Rubber Crawler Tracks for Muddy Fields | 1250L Grain Hopper",
-        "terms": "Includes operator and grain discharge assistance. Ideal for paddy and corn."
-    },
-    {
-        "id": 7,
-        "title": "Preet 987 Self-Propelled Paddy Harvester",
-        "category": "Harvesters",
-        "resource_type": "Paddy Harvester",
-        "provider_name": "Balaji Agro Services",
-        "contact_phone": "+91 97012 34567",
-        "location": "Warangal Rural, Telangana",
-        "latitude": 17.9689,
-        "longitude": 79.5941,
-        "price": 2400.0,
-        "price_unit": "hour",
-        "price_per_hour": 2400.0,
-        "price_per_acre": 2700.0,
-        "price_per_day": 21000.0,
-        "availability": "Available",
-        "rating": 4.8,
-        "description": "Specialized high-capacity track harvester for wet and submerged paddy fields. Delivers clean, uncrushed grain directly into gunny bags or tractor trolley.",
-        "image_url": "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80",
-        "specs": "101 HP Engine | 14-Foot Cutter Bar | Hydrostatic Transmission | High Ground Clearance Track System",
-        "terms": "Booking on per acre or per hour basis. Experienced crop harvesting team."
-    },
-    {
-        "id": 8,
-        "title": "AgriDrone 16L Precision Crop Spraying Drone",
-        "category": "Drone Spraying",
-        "resource_type": "Agricultural Drone",
-        "provider_name": "AgriDrone Services (DGCA Certified)",
-        "contact_phone": "+91 91234 56780",
-        "location": "Shamshabad, Ranga Reddy, Telangana",
-        "latitude": 17.2530,
-        "longitude": 78.3984,
-        "price": 1500.0,
-        "price_unit": "hour",
-        "price_per_hour": 1500.0,
-        "price_per_acre": 500.0,
-        "price_per_day": 8000.0,
-        "availability": "Available",
-        "rating": 4.9,
-        "description": "DGCA certified drone pilot with 16-liter automated spray tank, obstacle avoidance radar, and micron centrifugal nozzles for uniform foliar pesticide and liquid fertilizer spraying.",
-        "image_url": "https://images.unsplash.com/photo-1506947411487-a56738267384?w=800&auto=format&fit=crop&q=80",
-        "specs": "16-Liter Spray Payload | Dual Centrifugal Atomizer Nozzles | 4D Terrain Following Radar | Spray Speed 1 Acre in 7 Mins",
-        "terms": "Farmer provides chemical solution and clean water. DGCA-certified pilot handles all flight operations."
-    },
-    {
-        "id": 9,
-        "title": "Shaktiman 7-Feet Heavy Duty Rotavator",
-        "category": "Farm Machinery",
-        "resource_type": "Rotavator",
-        "provider_name": "Rythu Mitra Implements",
-        "contact_phone": "+91 94901 67890",
-        "location": "Kummarguda, Ranga Reddy, Telangana",
-        "latitude": 17.2285,
-        "longitude": 78.4312,
-        "price": 450.0,
-        "price_unit": "hour",
-        "price_per_hour": 450.0,
-        "price_per_acre": 600.0,
-        "price_per_day": 3200.0,
-        "availability": "Available",
-        "rating": 4.7,
-        "description": "7-feet width rotary tiller with 48 Boron steel L-shaped blades. Pulverizes tough clay and black cotton soils into smooth seedbeds in a single pass.",
-        "image_url": "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
-        "specs": "48 High-Grade Boron Blades | Multispeed Gearbox | Side Gear Drive | Fits 45-65 HP Tractors",
-        "terms": "Can be booked standalone or along with tractor."
-    },
-    {
-        "id": 10,
-        "title": "9-Tyne Spring Loaded Heavy Cultivator",
-        "category": "Farm Machinery",
-        "resource_type": "Cultivator",
-        "provider_name": "Kisan Tools & Rentals",
-        "contact_phone": "+91 88990 12345",
-        "location": "Kandukur, Ranga Reddy, Telangana",
-        "latitude": 17.0670,
-        "longitude": 78.4940,
-        "price": 350.0,
-        "price_unit": "hour",
-        "price_per_hour": 350.0,
-        "price_per_acre": 450.0,
-        "price_per_day": 2500.0,
-        "availability": "Available",
-        "rating": 4.6,
-        "description": "Double-spring loaded 9-shank cultivator designed for breaking hard pan, root aerating, stubble uprooting, and weed destruction in cotton and maize fields.",
-        "image_url": "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
-        "specs": "9 Spring Loaded Tynes | 50mm Reversible Shovels | Heavy Duty Tubular Main Frame",
-        "terms": "Daily and hourly rental available."
-    },
-    {
-        "id": 11,
-        "title": "Automatic Pneumatic Seed-cum-Fertilizer Sowing Drill",
-        "category": "Farm Machinery",
-        "resource_type": "Seed Sowing Machine",
-        "provider_name": "Smart Farm Equipment",
-        "contact_phone": "+91 93456 78901",
-        "location": "Maheshwaram, Ranga Reddy, Telangana",
-        "latitude": 17.1350,
-        "longitude": 78.4330,
-        "price": 700.0,
-        "price_unit": "hour",
-        "price_per_hour": 700.0,
-        "price_per_acre": 800.0,
-        "price_per_day": 5000.0,
-        "availability": "Available",
-        "rating": 4.5,
-        "description": "Precision 9-row automatic seed and fertilizer drill for cotton, maize, groundnut, pulses, and paddy. Ensures uniform row spacing and optimal seed depth.",
-        "image_url": "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
-        "specs": "9-Row Adjustable Planter | Dual Seed & Fertilizer Box | Fluted Roller Metering | Depth Control Press Wheels",
-        "terms": "Calibrated for Indian seed varieties. Attached with 45HP tractor and operator."
-    },
-    {
-        "id": 12,
-        "title": "High-Pressure Rain Gun Mobile Irrigation Unit",
-        "category": "Farm Machinery",
-        "resource_type": "Irrigation Equipment",
-        "provider_name": "Kisan Jal Dhara Services",
-        "contact_phone": "+91 93901 77665",
-        "location": "Kandukur, Ranga Reddy, Telangana",
-        "latitude": 17.0670,
-        "longitude": 78.4940,
-        "price": 150.0,
-        "price_unit": "hour",
-        "price_per_hour": 150.0,
-        "price_per_acre": 400.0,
-        "price_per_day": 800.0,
-        "availability": "Unavailable",
-        "rating": 4.8,
-        "description": "Heavy-duty 2-inch rain gun sprinkler capable of irrigating a 120-foot radius (up to 1.5 acres per setting) with adjustable sector rotation and diesel pump.",
-        "image_url": "https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?w=800&auto=format&fit=crop&q=80",
-        "specs": "2-Inch Inlet | 360° / Part-Circle Sector Adjustment | 40-Meter Throw Radius | Heavy Cast Tripod Stand",
-        "terms": "Includes tripod stand and quick-lock HDPE connection couplers. Under routine maintenance today."
-    }
-]
+# No hardcoded or mock resources: Only owner-added resources from the database are served.
 
-
-def seed_resources_if_empty(db: Session):
+def normalize_resource_category(category: Optional[str] = None, resource_type: Optional[str] = None, title: Optional[str] = None) -> str:
     """
-    Ensures default agricultural resources exist in database with rich coordinates.
+    Normalizes resource category to one of the 5 standard categories:
+    - Tractor
+    - Drone Spraying
+    - Harvester
+    - JCB
+    - Agricultural Equipment
     """
-    try:
-        count = db.query(Resource).count()
-        if count == 0:
-            for item in DEFAULT_RESOURCES:
-                data = {k: v for k, v in item.items() if k != "id"}
-                res = Resource(**data)
-                db.add(res)
-            db.commit()
-        else:
-            # Sync any missing attributes / coordinates on existing rows
-            existing = db.query(Resource).all()
-            for res in existing:
-                match = next((d for d in DEFAULT_RESOURCES if d["title"] == res.title or d["id"] == res.id), None)
-                if match:
-                    if not res.category:
-                        res.category = match.get("category", "Tractors")
-                    if res.latitude is None or res.latitude == 0:
-                        res.latitude = match.get("latitude", 17.2285)
-                    if res.longitude is None or res.longitude == 0:
-                        res.longitude = match.get("longitude", 78.4312)
-                    if not res.price_per_hour:
-                        res.price_per_hour = match.get("price_per_hour", res.price)
-                    if not res.price_per_acre:
-                        res.price_per_acre = match.get("price_per_acre", 0.0)
-                    if not res.price_per_day:
-                        res.price_per_day = match.get("price_per_day", res.price * 8)
-            db.commit()
-    except Exception as e:
-        print(f"Error seeding resources: {e}")
-        db.rollback()
+    combined = f"{category or ''} {resource_type or ''} {title or ''}".lower()
+    if "tractor" in combined:
+        return "Tractor"
+    if "drone" in combined:
+        return "Drone Spraying"
+    if "harvester" in combined or "combine" in combined:
+        return "Harvester"
+    if "jcb" in combined or "earthmover" in combined or "excavator" in combined or "trencher" in combined:
+        return "JCB"
+    return "Agricultural Equipment"
 
 
 def get_resources_list(
@@ -357,11 +77,9 @@ def get_resources_list(
     search: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
-    Returns list of agricultural farm resources with dynamic road/straight-line distance,
-    sorted strictly nearest-first according to farmer's GPS coordinates.
+    Returns list of agricultural farm resources added by owners through the Resource Owner Portal.
+    Strictly serves owner-added resources from the database.
     """
-    seed_resources_if_empty(db)
-    
     try:
         query = db.query(Resource)
 
@@ -370,61 +88,96 @@ def get_resources_list(
         if target_filter and target_filter.lower() != "all":
             tf = target_filter.lower().strip()
             if "tractor" in tf:
-                query = query.filter(Resource.category.ilike("%tractor%") | Resource.resource_type.ilike("%tractor%"))
+                query = query.filter(Resource.category.ilike("%tractor%") | Resource.resource_type.ilike("%tractor%") | Resource.title.ilike("%tractor%"))
             elif "drone" in tf:
-                query = query.filter(Resource.category.ilike("%drone%") | Resource.resource_type.ilike("%drone%"))
-            elif "harvester" in tf:
-                query = query.filter(Resource.category.ilike("%harvester%") | Resource.resource_type.ilike("%harvester%"))
-            elif "jcb" in tf or "earthmover" in tf:
-                query = query.filter(Resource.category.ilike("%jcb%") | Resource.category.ilike("%earthmover%") | Resource.resource_type.ilike("%jcb%") | Resource.resource_type.ilike("%earthmover%"))
-            elif "machinery" in tf or "equipment" in tf or "rotavator" in tf or "cultivator" in tf:
-                query = query.filter(Resource.category.ilike("%machinery%") | Resource.category.ilike("%equipment%") | Resource.resource_type.ilike("%rotavator%") | Resource.resource_type.ilike("%cultivator%") | Resource.resource_type.ilike("%seed%") | Resource.resource_type.ilike("%irrigation%"))
+                query = query.filter(Resource.category.ilike("%drone%") | Resource.resource_type.ilike("%drone%") | Resource.title.ilike("%drone%"))
+            elif "harvester" in tf or "combine" in tf:
+                query = query.filter(Resource.category.ilike("%harvester%") | Resource.category.ilike("%combine%") | Resource.resource_type.ilike("%harvester%") | Resource.resource_type.ilike("%combine%") | Resource.title.ilike("%harvester%"))
+            elif "jcb" in tf or "earthmover" in tf or "excavator" in tf:
+                query = query.filter(Resource.category.ilike("%jcb%") | Resource.category.ilike("%earthmover%") | Resource.category.ilike("%excavator%") | Resource.resource_type.ilike("%jcb%") | Resource.resource_type.ilike("%earthmover%") | Resource.resource_type.ilike("%excavator%") | Resource.title.ilike("%jcb%") | Resource.title.ilike("%earthmover%"))
+            elif "equipment" in tf or "machinery" in tf or "rotavator" in tf or "cultivator" in tf or "pump" in tf or "sprayer" in tf or "seed" in tf or "drill" in tf:
+                query = query.filter(
+                    Resource.category.ilike("%equipment%") | 
+                    Resource.category.ilike("%machinery%") | 
+                    Resource.resource_type.ilike("%rotavator%") | 
+                    Resource.resource_type.ilike("%cultivator%") | 
+                    Resource.resource_type.ilike("%seed%") | 
+                    Resource.resource_type.ilike("%sprayer%") | 
+                    Resource.resource_type.ilike("%pump%") | 
+                    Resource.resource_type.ilike("%irrigation%") |
+                    Resource.resource_type.ilike("%transport%") |
+                    Resource.category.ilike("%agricultural equipment%")
+                )
             else:
-                query = query.filter(Resource.category.ilike(f"%{target_filter}%") | Resource.resource_type.ilike(f"%{target_filter}%"))
+                query = query.filter(Resource.category.ilike(f"%{target_filter}%") | Resource.resource_type.ilike(f"%{target_filter}%") | Resource.title.ilike(f"%{target_filter}%"))
 
-        if location:
-            query = query.filter(Resource.location.ilike(f"%{location}%"))
+        if location and location.strip().lower() != "all":
+            clean_loc = location.lower().replace("kummariguda", "kummarguda").replace("rangareddy", "ranga reddy")
+            raw_tokens = [t.strip() for t in re.split(r'[,;/]+', clean_loc) if t.strip()]
+            tokens = []
+            for t in raw_tokens:
+                t_clean = re.sub(r'\s+', ' ', t).strip()
+                if t_clean and t_clean not in ["india", "near", "telangana", "state"]:
+                    tokens.append(t_clean)
+            if tokens:
+                loc_filters = []
+                for tok in tokens:
+                    loc_filters.append(Resource.location.ilike(f"%{tok}%"))
+                    loc_filters.append(Resource.village.ilike(f"%{tok}%"))
+                    loc_filters.append(Resource.mandal.ilike(f"%{tok}%"))
+                    loc_filters.append(Resource.district.ilike(f"%{tok}%"))
+                query = query.filter(or_(*loc_filters))
 
-        raw_resources = query.all()
+        raw_resources = query.order_by(Resource.created_at.desc() if hasattr(Resource, 'created_at') else Resource.id.desc()).all()
     except Exception as e:
         print(f"Error fetching DB resources: {e}")
         raw_resources = []
 
-    # If DB query returned nothing or failed, fallback to DEFAULT_RESOURCES
+    # If no resources are in the database, return strictly empty list
     if not raw_resources:
-        items_to_process = DEFAULT_RESOURCES
-    else:
-        items_to_process = []
-        for r in raw_resources:
-            items_to_process.append({
-                "id": r.id,
-                "title": r.title,
-                "name": r.title,
-                "category": r.category or ("Tractors" if "tractor" in (r.resource_type or "").lower() else "Farm Machinery"),
-                "resource_type": r.resource_type,
-                "type": r.resource_type,
-                "provider_name": r.provider_name,
-                "ownerName": r.provider_name,
-                "contact_phone": r.contact_phone,
-                "ownerMobile": r.contact_phone,
-                "location": r.location,
-                "latitude": r.latitude or 17.2285,
-                "longitude": r.longitude or 78.4312,
-                "price": r.price,
-                "price_unit": r.price_unit or "hour",
-                "price_per_hour": r.price_per_hour or r.price,
-                "pricePerHour": r.price_per_hour or r.price,
-                "price_per_acre": r.price_per_acre or 0.0,
-                "pricePerAcre": r.price_per_acre or 0.0,
-                "price_per_day": r.price_per_day or (r.price * 8),
-                "availability": r.availability or "Available",
-                "rating": r.rating or 4.8,
-                "description": r.description or "",
-                "image_url": r.image_url or "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
-                "image": r.image_url or "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
-                "specs": r.specs or "",
-                "terms": r.terms or ""
-            })
+        return []
+
+    items_to_process = []
+    for r in raw_resources:
+        # Determine normalized standard category
+        cat_norm = normalize_resource_category(r.category, r.resource_type, r.title)
+
+        items_to_process.append({
+            "id": r.id,
+            "owner_id": r.owner_id,
+            "title": r.title,
+            "name": r.title,
+            "category": cat_norm,
+            "resource_type": r.resource_type,
+            "type": r.resource_type,
+            "provider_name": r.provider_name,
+            "ownerName": r.provider_name,
+            "contact_phone": r.contact_phone,
+            "ownerMobile": r.contact_phone,
+            "location": r.location,
+            "village": getattr(r, 'village', '') or '',
+            "mandal": getattr(r, 'mandal', '') or '',
+            "district": getattr(r, 'district', '') or '',
+            "state": getattr(r, 'state', 'Telangana') or 'Telangana',
+            "latitude": r.latitude or 17.2285,
+            "longitude": r.longitude or 78.4312,
+            "price": r.price,
+            "price_unit": r.price_unit or "hour",
+            "price_per_hour": r.price_per_hour or r.price,
+            "pricePerHour": r.price_per_hour or r.price,
+            "price_per_acre": r.price_per_acre or 0.0,
+            "pricePerAcre": r.price_per_acre or 0.0,
+            "price_per_day": r.price_per_day or (r.price * 8),
+            "price_per_trip": getattr(r, 'price_per_trip', 0.0) or 0.0,
+            "availability": r.availability or "Available",
+            "rating": r.rating or 5.0,
+            "total_ratings": getattr(r, 'total_ratings', 1) or 1,
+            "description": r.description or "",
+            "image_url": r.image_url or "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+            "image": r.image_url or "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+            "specs": r.specs or "",
+            "terms": r.terms or ""
+        })
 
     results: List[Dict[str, Any]] = []
 
@@ -436,10 +189,10 @@ def get_resources_list(
         res_lon = item.get("longitude", 78.4312)
 
         # Distance calculation
-        distance_km = 5.2
+        distance_km = 0.0
         is_road_distance = False
-        duration_minutes = 15
-        formatted_distance = "📍 5.2 km away"
+        duration_minutes = 10
+        formatted_distance = ""
         distance_label = "Distance"
 
         if f_lat is not None and f_lon is not None:
@@ -448,43 +201,49 @@ def get_resources_list(
             formatted_distance = f"📍 {straight} km away"
             duration_minutes = max(2, round(straight * 2))
         else:
-            # Random subtle offset for rich realistic demo
-            distance_km = round(3.5 + (item.get("id", 1) * 1.7) % 15.0, 1)
-            formatted_distance = f"📍 {distance_km} km away"
-            duration_minutes = max(5, round(distance_km * 2.2))
+            formatted_distance = item.get("location", "")
 
         # Google Maps Directions URL
         dest_str = f"{res_lat},{res_lon}"
         google_maps_route_url = f"https://www.google.com/maps/dir/?api=1&destination={dest_str}"
 
         res_dict = {
-            "id": item.get("id", 1),
-            "name": item.get("title") or item.get("name", "Farm Resource"),
-            "title": item.get("title") or item.get("name", "Farm Resource"),
-            "category": item.get("category", "Tractors"),
-            "type": item.get("resource_type") or item.get("type", "Tractor"),
-            "resource_type": item.get("resource_type") or item.get("type", "Tractor"),
-            "provider_name": item.get("provider_name") or item.get("ownerName", "Agri Provider"),
-            "ownerName": item.get("provider_name") or item.get("ownerName", "Agri Provider"),
-            "contact_phone": item.get("contact_phone") or item.get("ownerMobile", "+91 98765 43210"),
-            "ownerMobile": item.get("contact_phone") or item.get("ownerMobile", "+91 98765 43210"),
-            "location": item.get("location", "Telangana, India"),
+            "id": item["id"],
+            "owner_id": item.get("owner_id"),
+            "ownerId": item.get("owner_id"),
+            "name": item["title"],
+            "title": item["title"],
+            "category": item["category"],
+            "type": item["resource_type"],
+            "resource_type": item["resource_type"],
+            "provider_name": item["provider_name"],
+            "ownerName": item["provider_name"],
+            "contact_phone": item["contact_phone"],
+            "ownerMobile": item["contact_phone"],
+            "location": item["location"],
+            "village": item.get("village", ""),
+            "mandal": item.get("mandal", ""),
+            "district": item.get("district", ""),
+            "state": item.get("state", "Telangana"),
             "latitude": res_lat,
             "longitude": res_lon,
-            "price": item.get("price", 800.0),
-            "price_unit": item.get("price_unit", "hour"),
-            "pricePerHour": item.get("price_per_hour") or item.get("pricePerHour") or item.get("price", 800.0),
-            "price_per_hour": item.get("price_per_hour") or item.get("pricePerHour") or item.get("price", 800.0),
-            "pricePerAcre": item.get("price_per_acre") or item.get("pricePerAcre", 0.0),
-            "price_per_acre": item.get("price_per_acre") or item.get("pricePerAcre", 0.0),
-            "price_per_day": item.get("price_per_day", 6500.0),
-            "availability": item.get("availability", "Available"),
-            "rating": item.get("rating", 4.8),
-            "description": item.get("description", ""),
-            "image": item.get("image_url") or item.get("image", "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80"),
-            "image_url": item.get("image_url") or item.get("image", "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80"),
-            "specs": item.get("specs", ""),
-            "terms": item.get("terms", ""),
+            "price": item["price"],
+            "price_unit": item["price_unit"],
+            "pricePerHour": item["price_per_hour"],
+            "price_per_hour": item["price_per_hour"],
+            "pricePerAcre": item["price_per_acre"],
+            "price_per_acre": item["price_per_acre"],
+            "price_per_day": item["price_per_day"],
+            "price_per_trip": item.get("price_per_trip", 0.0),
+            "availability": item["availability"],
+            "status": item["availability"],
+            "rating": item["rating"],
+            "total_ratings": item.get("total_ratings", 1),
+            "description": item["description"],
+            "image": item["image"],
+            "image_url": item["image_url"],
+            "specs": item["specs"],
+            "terms": item["terms"],
             "distance_km": distance_km,
             "is_road_distance": is_road_distance,
             "duration_minutes": duration_minutes,
@@ -502,8 +261,8 @@ def get_resources_list(
 
         results.append(res_dict)
 
-    # Sort strictly nearest first
-    results.sort(key=lambda x: x["distance_km"] if x["distance_km"] is not None else 99999)
+    if f_lat is not None and f_lon is not None:
+        results.sort(key=lambda x: x["distance_km"] if x["distance_km"] is not None else 99999)
     return results
 
 
@@ -517,7 +276,6 @@ def check_resource_availability(
     """
     Checks resource availability for a specified date and time slot.
     """
-    seed_resources_if_empty(db)
     resource = db.query(Resource).filter(Resource.id == resource_id).first()
     
     all_slots = [
@@ -528,28 +286,12 @@ def check_resource_availability(
     ]
 
     if not resource:
-        # Check fallback demo resources
-        fallback = next((d for d in DEFAULT_RESOURCES if d["id"] == resource_id), None)
-        if not fallback:
-            return {
-                "available": True,
-                "available_slots": all_slots,
-                "booked_slots": [],
-                "message": "✓ Available for booking"
-            }
-        title = fallback["title"]
-        provider = fallback["provider_name"]
-        phone = fallback["contact_phone"]
-        price = fallback["price"]
-        price_hr = fallback["price_per_hour"]
-        price_acre = fallback["price_per_acre"]
-    else:
-        title = resource.title
-        provider = resource.provider_name
-        phone = resource.contact_phone
-        price = resource.price
-        price_hr = resource.price_per_hour or resource.price
-        price_acre = resource.price_per_acre or 0.0
+        return {
+            "available": False,
+            "available_slots": [],
+            "booked_slots": [],
+            "message": "Resource not found."
+        }
 
     try:
         existing_bookings = db.query(Booking).filter(
@@ -562,6 +304,13 @@ def check_resource_availability(
         booked_slots = []
 
     available_slots = [s for s in all_slots if s not in booked_slots]
+
+    title = resource.title if resource else "Agricultural Resource"
+    provider = resource.provider_name if resource else "Equipment Owner"
+    phone = resource.contact_phone if resource else ""
+    price = resource.price if resource else 800.0
+    price_hr = (resource.price_per_hour if resource and resource.price_per_hour else price)
+    price_acre = (resource.price_per_acre if resource and resource.price_per_acre else 0.0)
 
     return {
         "resource_id": resource_id,
@@ -607,16 +356,33 @@ def create_booking(
     total_amount: Optional[float] = None
 ) -> Dict[str, Any]:
     """
-    Creates and confirms a resource booking.
+    Creates and confirms a resource booking linked to persistent farmer account.
     """
-    seed_resources_if_empty(db)
     resource = db.query(Resource).filter(Resource.id == resource_id).first()
+    if not resource:
+        raise ValueError("Selected resource was not found in the owner database.")
     
-    res_title = resource.title if resource else "Mahindra 575 DI Tractor"
-    res_type = resource.resource_type if resource else "Tractor"
-    prov_name = resource.provider_name if resource else "Ramesh Kumar"
-    prov_phone = resource.contact_phone if resource else "+91 98765 43210"
-    rate = resource.price if resource else 800.0
+    res_title = resource.title
+    res_type = resource.resource_type or "Equipment"
+    prov_name = resource.provider_name or "Resource Owner"
+    prov_phone = resource.contact_phone or ""
+    rate = resource.price or 800.0
+
+    # Resolve persistent registered farmer account
+    clean_f_phone = "".join(c for c in (farmer_phone or "") if c.isdigit())
+    if len(clean_f_phone) >= 10:
+        clean_f_phone = clean_f_phone[-10:]
+        farmer_user = db.query(User).filter(
+            (User.phone == farmer_phone) | (User.phone == clean_f_phone) | (User.phone.like(f"%{clean_f_phone}"))
+        ).first()
+        if farmer_user:
+            farmer_id = farmer_user.id
+            farmer_name = farmer_user.name
+            farmer_phone = farmer_user.phone
+            if not village and farmer_user.village:
+                village = farmer_user.village
+            if not district and farmer_user.district:
+                district = farmer_user.district
 
     # Calculate total amount if missing
     computed_amount = total_amount
@@ -638,7 +404,8 @@ def create_booking(
     b_id = generate_booking_id(db)
     owner_id = resource.owner_id if resource else None
     if not owner_id and resource and resource.contact_phone:
-        owner_user = db.query(User).filter(User.phone == resource.contact_phone).first()
+        clean_o_phone = "".join(c for c in resource.contact_phone if c.isdigit())[-10:]
+        owner_user = db.query(User).filter((User.phone == resource.contact_phone) | (User.phone.like(f"%{clean_o_phone}%"))).first()
         if owner_user:
             owner_id = owner_user.id
 
@@ -797,31 +564,53 @@ def get_farmer_bookings(
     status: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
-    Returns full booking history with resource provider details and Google Maps routes.
+    Returns full booking history for a farmer with provider details and road distance routes.
     """
     results: List[Dict[str, Any]] = []
 
     try:
-        query = db.query(Booking)
-        if farmer_id:
-            query = query.filter(Booking.farmer_id == farmer_id)
+        farmer_user = None
+        clean_q_digits = "".join([c for c in (phone or "") if c.isdigit()])[-10:] if phone else ""
 
+        if farmer_id:
+            farmer_user = db.query(User).filter(User.id == farmer_id).first()
+        elif clean_q_digits:
+            farmer_user = db.query(User).filter(
+                (User.phone == phone) | (User.phone == clean_q_digits) | (User.phone.like(f"%{clean_q_digits}%"))
+            ).first()
+
+        query = db.query(Booking)
         if status and status.lower() != "all":
             query = query.filter(Booking.status.ilike(status))
 
-        raw_bookings = query.order_by(Booking.created_at.desc()).all()
+        raw_bookings = query.order_by(Booking.created_at.desc() if hasattr(Booking, 'created_at') else Booking.id.desc()).all()
 
-        clean_q_digits = "".join([c for c in phone if c.isdigit()]) if phone else ""
+        # Match farmer by user id or phone
+        if farmer_user or farmer_id or clean_q_digits:
+            f_uid = farmer_user.id if farmer_user else farmer_id
+            f_phone_clean = "".join([c for c in (farmer_user.phone if farmer_user else (phone or "")) if c.isdigit()])[-10:]
+            
+            filtered = []
+            for b in raw_bookings:
+                b_phone_clean = "".join([c for c in (b.farmer_phone or "") if c.isdigit()])[-10:]
+                if (f_uid and b.farmer_id == f_uid) or (f_phone_clean and b_phone_clean == f_phone_clean) or (phone and phone in (b.farmer_phone or "")):
+                    filtered.append(b)
+            raw_bookings = filtered
 
         for b in raw_bookings:
-            if phone:
-                stored_digits = "".join([c for c in (b.farmer_phone or "") if c.isdigit()])
-                if clean_q_digits and clean_q_digits[-10:] not in stored_digits:
-                    continue
-
             res = db.query(Resource).filter(Resource.id == b.resource_id).first()
             if not res:
-                res_dict = next((d for d in DEFAULT_RESOURCES if d["id"] == b.resource_id), DEFAULT_RESOURCES[0])
+                res_dict = {
+                    "title": "Agricultural Resource",
+                    "resource_type": "Equipment",
+                    "category": "Farm Machinery",
+                    "provider_name": "Equipment Owner",
+                    "contact_phone": "",
+                    "image_url": "",
+                    "location": b.location or "",
+                    "price": b.total_amount or 0.0,
+                    "price_unit": "hour"
+                }
             else:
                 res_dict = {
                     "title": res.title,
@@ -838,6 +627,9 @@ def get_farmer_bookings(
             b_id_str = b.booking_id or f"AGR-2026-{b.id:04d}"
             gmaps_url = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(str(b.location or res_dict.get('location', 'Telangana')))}"
 
+            display_f_name = farmer_user.name if farmer_user else b.farmer_name
+            display_f_phone = farmer_user.phone if farmer_user else b.farmer_phone
+
             results.append({
                 "id": b.id,
                 "booking_id": b_id_str,
@@ -850,8 +642,8 @@ def get_farmer_bookings(
                 "owner_name": res_dict.get("provider_name", "Ramesh Kumar"),
                 "owner_mobile": res_dict.get("contact_phone", "+91 98765 43210"),
                 "contact_phone": res_dict.get("contact_phone", "+91 98765 43210"),
-                "farmer_name": b.farmer_name,
-                "farmer_phone": b.farmer_phone,
+                "farmer_name": display_f_name,
+                "farmer_phone": display_f_phone,
                 "image": res_dict.get("image_url", "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80"),
                 "image_url": res_dict.get("image_url", "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80"),
                 "price": res_dict.get("price", 800.0),
@@ -888,7 +680,6 @@ def get_owner_resources(
     """
     Returns resources belonging strictly to the logged-in equipment owner.
     """
-    seed_resources_if_empty(db)
     results: List[Dict[str, Any]] = []
 
     if not owner_id and not owner_phone:
@@ -949,8 +740,6 @@ def get_owner_resources(
 
 def add_owner_resource(db: Session, data: Dict[str, Any], owner: Optional[User] = None) -> Dict[str, Any]:
     """Adds a new agricultural resource to the marketplace."""
-    seed_resources_if_empty(db)
-    
     price_hr = float(data.get("price_per_hour") or data.get("pricePerHour") or data.get("price") or 800.0)
     price_day = float(data.get("price_per_day") or data.get("pricePerDay") or (price_hr * 8.0))
     price_acre = float(data.get("price_per_acre") or data.get("pricePerAcre") or 0.0)
@@ -964,10 +753,25 @@ def add_owner_resource(db: Session, data: Dict[str, Any], owner: Optional[User] 
     elif "transport" in res_type.lower():
         unit = "trip"
 
+    # Category determination
+    category = data.get("category")
+    if not category:
+        res_t = res_type.lower()
+        if "tractor" in res_t:
+            category = "Tractor"
+        elif "drone" in res_t:
+            category = "Drone Spraying"
+        elif "harvester" in res_t:
+            category = "Harvester"
+        elif "jcb" in res_t or "earthmover" in res_t:
+            category = "JCB"
+        else:
+            category = "Agricultural Equipment"
+
     res = Resource(
         owner_id=owner.id if owner else data.get("owner_id"),
         title=data.get("title") or data.get("name", "Farm Resource"),
-        category=data.get("category") or ("Tractors" if "tractor" in res_type.lower() else "Agricultural Equipment"),
+        category=category,
         resource_type=res_type,
         vehicle_number=data.get("vehicle_number") or data.get("vehicleNumber"),
         model=data.get("model"),
@@ -1034,15 +838,22 @@ def update_owner_resource(db: Session, resource_id: int, data: Dict[str, Any], o
     if "year" in data:
         res.year = str(data["year"])
     if "price_per_hour" in data or "pricePerHour" in data:
-        p = float(data.get("price_per_hour") or data.get("pricePerHour"))
-        res.price_per_hour = p
-        res.price = p
+        val = data.get("price_per_hour") if data.get("price_per_hour") is not None else data.get("pricePerHour")
+        if val is not None:
+            res.price_per_hour = float(val)
+            res.price = float(val)
     if "price_per_acre" in data or "pricePerAcre" in data:
-        res.price_per_acre = float(data.get("price_per_acre") or data.get("pricePerAcre"))
+        val = data.get("price_per_acre") if data.get("price_per_acre") is not None else data.get("pricePerAcre")
+        if val is not None:
+            res.price_per_acre = float(val)
     if "price_per_day" in data or "pricePerDay" in data:
-        res.price_per_day = float(data.get("price_per_day") or data.get("pricePerDay"))
+        val = data.get("price_per_day") if data.get("price_per_day") is not None else data.get("pricePerDay")
+        if val is not None:
+            res.price_per_day = float(val)
     if "price_per_trip" in data or "pricePerTrip" in data:
-        res.price_per_trip = float(data.get("price_per_trip") or data.get("pricePerTrip"))
+        val = data.get("price_per_trip") if data.get("price_per_trip") is not None else data.get("pricePerTrip")
+        if val is not None:
+            res.price_per_trip = float(val)
     if "availability" in data:
         res.availability = data["availability"]
     if "location" in data:
@@ -1163,7 +974,28 @@ def get_owner_bookings(
             platform_fee = b.platform_fee or round(total_amt * 0.05, 2)
             owner_earnings = b.owner_earnings or round(total_amt * 0.95, 2)
 
-            farm_loc = b.farm_location or b.location or "Kummarguda, Telangana"
+            # Resolve actual registered farmer details
+            farmer_user = None
+            if b.farmer_id:
+                farmer_user = db.query(User).filter(User.id == b.farmer_id).first()
+            if not farmer_user and b.farmer_phone:
+                clean_f_phone = "".join([c for c in b.farmer_phone if c.isdigit()])[-10:]
+                if clean_f_phone:
+                    farmer_user = db.query(User).filter(
+                        (User.phone == b.farmer_phone) |
+                        (User.phone == clean_f_phone) |
+                        (User.phone.like(f"%{clean_f_phone}%"))
+                    ).first()
+
+            actual_farmer_name = farmer_user.name if farmer_user else (b.farmer_name or "Farmer")
+            actual_farmer_phone = farmer_user.phone if farmer_user else (b.farmer_phone or "")
+            farm_loc = b.farm_location or b.location or (farmer_user.location if farmer_user else "Kummarguda, Telangana")
+            village = b.village or (farmer_user.village if farmer_user else "Kummarguda")
+            district = b.district or (farmer_user.district if farmer_user else "Ranga Reddy")
+            mandal = getattr(b, 'mandal', '') or (farmer_user.mandal if farmer_user else "Shamshabad")
+            farm_lat = getattr(b, 'farm_latitude', None) or (farmer_user.latitude if farmer_user else 17.2285)
+            farm_lon = getattr(b, 'farm_longitude', None) or (farmer_user.longitude if farmer_user else 78.4312)
+
             dest_query = urllib.parse.quote(farm_loc)
             gmaps_url = f"https://www.google.com/maps/dir/?api=1&destination={dest_query}"
 
@@ -1171,14 +1003,14 @@ def get_owner_bookings(
                 "id": b.id,
                 "booking_id": b.booking_id or f"AGR-2026-{b.id:04d}",
                 "resource_id": b.resource_id,
-                "resource_title": res.title if res else "Mahindra Tractor",
-                "resource_name": res.title if res else "Mahindra Tractor",
-                "resource_type": res.resource_type if res else "Tractor",
-                "vehicle_number": getattr(res, 'vehicle_number', '') if res else "TS 03 AB 4591",
+                "resource_title": res.title if res else "Farm Equipment",
+                "resource_name": res.title if res else "Farm Equipment",
+                "resource_type": res.resource_type if res else "Equipment",
+                "vehicle_number": getattr(res, 'vehicle_number', '') if res else "",
                 "image": res.image_url if res else "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
-                "farmer_id": b.farmer_id,
-                "farmer_name": b.farmer_name,
-                "farmer_phone": b.farmer_phone,
+                "farmer_id": farmer_user.id if farmer_user else b.farmer_id,
+                "farmer_name": actual_farmer_name,
+                "farmer_phone": actual_farmer_phone,
                 "booking_date": b.booking_date,
                 "booking_time": b.booking_time,
                 "start_time": b.start_time or (b.booking_time.split(" - ")[0] if " - " in b.booking_time else "10:00 AM"),
@@ -1186,11 +1018,11 @@ def get_owner_bookings(
                 "duration": b.duration or "4 hours",
                 "farm_location": farm_loc,
                 "location": farm_loc,
-                "village": b.village or "Kummarguda",
-                "mandal": getattr(b, 'mandal', '') or "Shamshabad",
-                "district": b.district or "Ranga Reddy",
-                "farm_latitude": getattr(b, 'farm_latitude', 17.2285) or 17.2285,
-                "farm_longitude": getattr(b, 'farm_longitude', 78.4312) or 78.4312,
+                "village": village,
+                "mandal": mandal,
+                "district": district,
+                "farm_latitude": farm_lat,
+                "farm_longitude": farm_lon,
                 "total_amount": total_amt,
                 "amount": total_amt,
                 "platform_fee": platform_fee,
@@ -1203,8 +1035,6 @@ def get_owner_bookings(
             })
     except Exception as e:
         print(f"Error loading owner bookings: {e}")
-
-    return results
 
     return results
 
@@ -1312,8 +1142,6 @@ def get_owner_stats(db: Session, owner_phone: Optional[str] = None, owner_id: Op
     Computes owner dashboard metrics: Total Resources, Available, Pending Requests,
     Confirmed, Completed, Total Earnings.
     """
-    seed_resources_if_empty(db)
-    
     try:
         q_res = db.query(Resource)
         if owner_id:
@@ -1435,10 +1263,14 @@ def get_owner_ratings(
         db_ratings = query.order_by(ResourceRating.created_at.desc()).all()
 
         for r in db_ratings:
+            f_user = None
+            if r.farmer_id:
+                f_user = db.query(User).filter(User.id == r.farmer_id).first()
+            f_name = f_user.name if f_user else r.farmer_name
             reviews.append({
                 "id": r.id,
                 "booking_id": r.booking_id,
-                "farmer_name": r.farmer_name,
+                "farmer_name": f_name,
                 "rating": r.rating,
                 "review": r.review,
                 "date": r.created_at.strftime("%d %b %Y") if r.created_at else "Recently"

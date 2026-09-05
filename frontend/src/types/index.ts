@@ -316,6 +316,8 @@ export interface FarmResource {
   image?: string;
   specs?: string;
   terms?: string;
+  latitude?: number;
+  longitude?: number;
   distance_km?: number;
   formatted_distance?: string;
   google_maps_route_url?: string;
@@ -323,17 +325,26 @@ export interface FarmResource {
 
 export interface BookingRecord {
   id: number;
+  booking_id?: string;
   resource_id: number;
   resource_title: string;
+  resource_name?: string;
   resource_type: string;
   provider_name: string;
+  owner_name?: string;
   contact_phone: string;
+  owner_mobile?: string;
   price: number;
   price_unit: string;
+  amount?: number;
+  total_amount?: number;
   booking_date: string;
   booking_time: string;
+  duration?: string;
   location: string;
+  farm_location?: string;
   status: string;
+  notes?: string;
   created_at: string;
 }
 

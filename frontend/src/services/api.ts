@@ -796,72 +796,61 @@ export const api = {
       query.append('location', params.location);
     }
 
-    const fetchWithFallback = async (base: string): Promise<FarmResource[]> => {
-      const qs = query.toString();
-      const apiUrl = `${base}/resources${qs ? `?${qs}` : ''}`;
-      console.log("PRODUCTION RESOURCE API URL:", apiUrl);
-      const res = await fetch(apiUrl);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch resources (${res.status})`);
-      }
-      const rawData = await res.json();
-      console.log("Farmer resources API:", rawData);
-
-      const backendRoot = base.replace(/\/api\/?$/, '');
-      const mapped: FarmResource[] = (Array.isArray(rawData) ? rawData : []).map((item: any) => {
-        let img = item.image_url || item.image || '';
-        if (img && img.startsWith('/')) {
-          img = `${backendRoot}${img}`;
-        }
-        return {
-          id: item.id,
-          resource_type: item.resource_type || item.type || item.category || 'Equipment',
-          type: item.type || item.resource_type || 'Equipment',
-          category: item.category || 'Farm Machinery',
-          title: item.title || item.name || 'Farm Equipment',
-          name: item.name || item.title || 'Farm Equipment',
-          provider_name: item.provider_name || item.ownerName || 'Equipment Owner',
-          ownerName: item.ownerName || item.provider_name || 'Equipment Owner',
-          location: item.location || 'Telangana, India',
-          price: item.price ?? item.price_per_hour ?? 800,
-          price_unit: item.price_unit || 'hour',
-          price_per_hour: item.price_per_hour ?? item.pricePerHour ?? item.price ?? 800,
-          pricePerHour: item.pricePerHour ?? item.price_per_hour ?? item.price ?? 800,
-          price_per_acre: item.price_per_acre ?? item.pricePerAcre ?? 0,
-          pricePerAcre: item.pricePerAcre ?? item.price_per_acre ?? 0,
-          price_per_day: item.price_per_day ?? ((item.price ?? 800) * 8),
-          availability: item.availability || item.status || 'Available',
-          status: item.status || item.availability || 'Available',
-          contact_phone: item.contact_phone || item.ownerMobile || '',
-          ownerMobile: item.ownerMobile || item.contact_phone || '',
-          rating: item.rating ?? 4.8,
-          description: item.description || '',
-          image_url: img || 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
-          image: img || 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
-          specs: item.specs || '',
-          terms: item.terms || '',
-          distance_km: item.distance_km,
-          formatted_distance: item.formatted_distance,
-          google_maps_route_url: item.google_maps_route_url
-        };
-      });
-      console.log("PRODUCTION RESOURCES:", mapped);
-      return mapped;
-    };
-
-    try {
-      return await fetchWithFallback(API_BASE);
-    } catch (primaryErr) {
-      console.warn('Primary resources fetch failed, attempting fallback:', primaryErr);
-      const fallbackBase = API_BASE.includes('render.com')
-        ? 'http://localhost:8000/api'
-        : 'https://agricare-resource-owner-api.onrender.com/api';
-      try {
-        return await fetchWithFallback(fallbackBase);
-      } catch {
-        throw primaryErr;
-      }
+    const qs = query.toString();
+    const apiUrl = `${API_BASE}/resources${qs ? `?${qs}` : ''}`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch resources (${res.status})`);
     }
+    const rawData = await res.json();
+
+    const backendRoot = API_BASE.replace(/\/api\/?$/, '');
+    const mapped: FarmResource[] = (Array.isArray(rawData) ? rawData : []).map((item: any) => {
+      let img = item.image_url || item.image || '';
+      if (img && img.startsWith('/')) {
+        img = `${backendRoot}${img}`;
+      }
+      return {
+        id: item.id,
+        owner_id: item.owner_id || item.ownerId,
+        ownerId: item.owner_id || item.ownerId,
+        resource_type: item.resource_type || item.type || item.category || 'Equipment',
+        type: item.type || item.resource_type || 'Equipment',
+        category: item.category || 'Farm Machinery',
+        title: item.title || item.name || 'Farm Equipment',
+        name: item.name || item.title || 'Farm Equipment',
+        provider_name: item.provider_name || item.ownerName || 'Equipment Owner',
+        ownerName: item.ownerName || item.provider_name || 'Equipment Owner',
+        location: item.location || 'Telangana, India',
+        village: item.village || '',
+        mandal: item.mandal || '',
+        district: item.district || '',
+        state: item.state || 'Telangana',
+        price: item.price ?? item.price_per_hour ?? 800,
+        price_unit: item.price_unit || 'hour',
+        price_per_hour: item.price_per_hour ?? item.pricePerHour ?? item.price ?? 800,
+        pricePerHour: item.pricePerHour ?? item.price_per_hour ?? item.price ?? 800,
+        price_per_acre: item.price_per_acre ?? item.pricePerAcre ?? 0,
+        pricePerAcre: item.pricePerAcre ?? item.price_per_acre ?? 0,
+        price_per_day: item.price_per_day ?? ((item.price ?? 800) * 8),
+        availability: item.availability || item.status || 'Available',
+        status: item.status || item.availability || 'Available',
+        contact_phone: item.contact_phone || item.ownerMobile || '',
+        ownerMobile: item.ownerMobile || item.contact_phone || '',
+        rating: item.rating ?? 4.8,
+        description: item.description || '',
+        image_url: img || 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
+        image: img || 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
+        specs: item.specs || '',
+        terms: item.terms || '',
+        latitude: item.latitude,
+        longitude: item.longitude,
+        distance_km: item.distance_km,
+        formatted_distance: item.formatted_distance,
+        google_maps_route_url: item.google_maps_route_url
+      };
+    });
+    return mapped;
   },
 
   async checkAvailability(resource_id: number, date: string): Promise<any> {
