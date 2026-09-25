@@ -137,6 +137,18 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
     { id: 'State Schemes', label: `${farmerState} Schemes`, icon: Building }
   ];
 
+  const isValidUrl = (url?: string): boolean => {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim();
+    if (!trimmed || trimmed === '#' || trimmed.startsWith('javascript:')) return false;
+    try {
+      const parsed = new URL(trimmed);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'Income Support': return <Coins className="w-3.5 h-3.5" />;
@@ -431,7 +443,8 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
           {schemes.map((scheme) => (
             <div
               key={scheme.id}
-              className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-card hover:shadow-card-hover transition-all flex flex-col justify-between space-y-4 group"
+              onClick={() => setActiveModalScheme(scheme)}
+              className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-card hover:shadow-card-hover transition-all flex flex-col justify-between space-y-4 group cursor-pointer hover:border-emerald-300"
             >
               {/* Card Top: Category & Status */}
               <div className="space-y-3">
@@ -508,22 +521,39 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setActiveModalScheme(scheme)}
-                    className="py-2.5 px-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveModalScheme(scheme);
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                   >
                     <FileText className="w-3.5 h-3.5" />
                     <span>View Details</span>
                   </button>
 
-                  <a
-                    href={scheme.official_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="py-2.5 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1.5 hover:border-emerald-300"
-                  >
-                    <span>Official Website</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                  </a>
+                  {isValidUrl(scheme.official_url) ? (
+                    <a
+                      href={scheme.official_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="py-2.5 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1.5 hover:border-emerald-300 hover:text-emerald-800"
+                    >
+                      <span>Official Website</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      onClick={(e) => e.stopPropagation()}
+                      className="py-2.5 px-3 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 font-medium text-xs flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
+                      title="Official website unavailable"
+                    >
+                      <span>Website Unavailable</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -533,8 +563,14 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
 
       {/* 5. Comprehensive Scheme Details Modal */}
       {activeModalScheme && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 space-y-5 p-5 sm:p-6 animate-in fade-in zoom-in duration-200">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+          onClick={() => setActiveModalScheme(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 space-y-5 p-5 sm:p-6 animate-in fade-in zoom-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
               <div className="space-y-1">
@@ -556,8 +592,9 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
               </div>
 
               <button
+                type="button"
                 onClick={() => setActiveModalScheme(null)}
-                className="p-2 text-slate-400 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors shrink-0"
+                className="p-2 text-slate-400 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors shrink-0 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -644,20 +681,30 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveModalScheme(null)}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
                 >
                   Close
                 </button>
 
-                <a
-                  href={activeModalScheme.official_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition-all"
-                >
-                  <span>Apply on Official Website</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                {isValidUrl(activeModalScheme.official_url) ? (
+                  <a
+                    href={activeModalScheme.official_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <span>Apply on Official Website</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 font-medium text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
+                  >
+                    <span>Official website unavailable</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>

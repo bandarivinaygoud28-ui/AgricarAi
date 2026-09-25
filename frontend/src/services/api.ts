@@ -17,6 +17,7 @@ import {
   SchemesResponse,
   ModelInfo
 } from '../types';
+import { OFFICIAL_GOVERNMENT_SCHEMES, computeClientSchemes } from '../data/schemesData';
 
 const DEPLOYED_BACKEND_URL = 'https://hv2026-0051-vortex-backend.onrender.com';
 const LOCAL_BACKEND_URL = 'http://localhost:8000';
@@ -627,17 +628,23 @@ export const api = {
         try {
           return await fetchWithFallback(REMOTE_API);
         } catch {
-          throw primaryErr;
+          // fallback to client-side database
         }
       }
-      throw primaryErr;
+      return computeClientSchemes(params);
     }
   },
 
   async getSchemeDetails(schemeId: string): Promise<GovernmentScheme> {
-    const res = await fetch(`${API_BASE}/schemes/${encodeURIComponent(schemeId)}`);
-    if (!res.ok) throw new Error('Failed to fetch scheme details');
-    return res.json();
+    try {
+      const res = await fetch(`${API_BASE}/schemes/${encodeURIComponent(schemeId)}`);
+      if (res.ok) return res.json();
+    } catch {
+      // fallback
+    }
+    const found = OFFICIAL_GOVERNMENT_SCHEMES.find((s) => s.id === schemeId);
+    if (found) return found;
+    throw new Error('Failed to fetch scheme details');
   },
 
   // Real-Time Agricultural Market News
