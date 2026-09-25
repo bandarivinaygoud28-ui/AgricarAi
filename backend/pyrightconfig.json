@@ -1,0 +1,14 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonPath": ".venv/Scripts/python.exe",
+  "extraPaths": [
+    ".",
+    "ai",
+    "training",
+    ".venv/Lib/site-packages",
+    "C:/Users/Vinay Goud/OneDrive/Desktop/hacaton/backend/.venv/Lib/site-packages",
+    "C:/Users/Vinay Goud/AppData/Local/Programs/Python/Python314/Lib/site-packages"
+  ],
+  "pythonPlatform": "Windows"
+}

@@ -12,8 +12,8 @@ export const sampleCropImages: SampleCropImage[] = [
     id: "tomato-leaf-blight",
     crop: "Tomato",
     affected_area: "Leaf",
-    label: "Demo: Tomato Early Blight (Leaf)",
-    url: "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=600&auto=format&fit=crop&q=80",
+    label: "Demo: Tomato Leaf (Early/Late Blight)",
+    url: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?w=600&auto=format&fit=crop&q=80",
     isDemo: true
   },
   {
@@ -29,7 +29,7 @@ export const sampleCropImages: SampleCropImage[] = [
     crop: "Paddy",
     affected_area: "Leaf",
     label: "Demo: Paddy Rice Blast (Leaf)",
-    url: "https://images.unsplash.com/photo-1536304929831-ee1ca9d44906?w=600&auto=format&fit=crop&q=80",
+    url: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=600&auto=format&fit=crop&q=80",
     isDemo: true
   },
   {
@@ -41,11 +41,11 @@ export const sampleCropImages: SampleCropImage[] = [
     isDemo: true
   },
   {
-    id: "chilli-fruit-rot",
-    crop: "Chilli",
-    affected_area: "Fruit / Boll",
-    label: "Demo: Chilli Anthracnose Pod Rot",
-    url: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?w=600&auto=format&fit=crop&q=80",
+    id: "potato-leaf-blight",
+    crop: "Potato",
+    affected_area: "Leaf",
+    label: "Demo: Potato Foliar Blight (Leaf)",
+    url: "https://images.unsplash.com/photo-1596547609652-9cf5d8d76921?w=600&auto=format&fit=crop&q=80",
     isDemo: true
   },
   {
@@ -57,3 +57,4 @@ export const sampleCropImages: SampleCropImage[] = [
     isDemo: true
   }
 ];
+

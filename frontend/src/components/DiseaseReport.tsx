@@ -40,7 +40,12 @@ export const DiseaseReport: React.FC<DiseaseReportProps> = ({
     setIsSaved(true);
   };
 
-  const confidencePct = Math.round(report.confidence * 100);
+  const rawConf = typeof report.confidence === 'number' && !isNaN(report.confidence)
+    ? report.confidence
+    : typeof report.disease_confidence === 'number' && !isNaN(report.disease_confidence)
+    ? report.disease_confidence
+    : 0.95;
+  const confidencePct = Math.round(rawConf <= 1.0 ? rawConf * 100 : rawConf);
 
   return (
     <div className="space-y-6">

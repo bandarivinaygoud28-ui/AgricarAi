@@ -191,7 +191,7 @@ def _fetch_live_openweather(lat: float, lon: float, api_key: str) -> Optional[Di
         return None
 
 def get_weather_data(
-    location: str = "Warangal, Telangana",
+    location: Optional[str] = "Warangal, Telangana",
     lat: Optional[float] = None,
     lon: Optional[float] = None,
     crop: Optional[str] = "Tomato"

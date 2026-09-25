@@ -2,6 +2,10 @@
 node_modules/
 .pnp
 .pnp.js
+.venv/
+backend/.venv/
+venv/
+
 
 # Build and distribution outputs
 dist/
@@ -47,4 +51,5 @@ backend/test_rapido_uber_verification.py
 backend/scratch_check_prod.py
 backend/verify_deployed_system_live.py
 backend/verify_full_system.py
-
+# IDE settings
+.vscode/

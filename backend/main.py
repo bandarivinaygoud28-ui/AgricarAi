@@ -1,8 +1,9 @@
 import os
 import json
 import base64
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any
+
 
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Query, Response
 from fastapi.staticfiles import StaticFiles
@@ -10,8 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
-from jose import JWTError, jwt
+from jose import JWTError, jwt  # type: ignore
+
 
 from database.database import engine, Base, get_db
 from database.models import User, DiseaseScan, Resource, Booking, ResourceRating
@@ -228,7 +229,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login", auto_error=False)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -238,8 +239,8 @@ def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session 
         return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        phone: str = payload.get("sub")
-        if phone is None:
+        phone: Optional[str] = payload.get("sub")
+        if not phone:
             return None
     except JWTError:
         return None
@@ -581,7 +582,7 @@ def update_farmer_profile(
     db: Session = Depends(get_db)
 ):
     if not current_user:
-        return {"success": True, "message": "Profile updated in session", "profile": req.dict(exclude_unset=True)}
+        return {"success": True, "message": "Profile updated in session", "profile": req.model_dump(exclude_unset=True)}
 
     if req.name is not None: current_user.name = req.name
     if req.phone is not None: current_user.phone = req.phone
@@ -1476,7 +1477,7 @@ def add_owner_resource_endpoint(
 ):
     if not current_owner:
         raise HTTPException(status_code=401, detail="Authentication required. Please log in.")
-    data = req.dict()
+    data = req.model_dump()
     return add_owner_resource(db=db, data=data, owner=current_owner)
 
 
@@ -1487,7 +1488,7 @@ def update_owner_resource_endpoint(
     current_owner: Optional[User] = Depends(get_current_owner),
     db: Session = Depends(get_db)
 ):
-    data = req.dict()
+    data = req.model_dump()
     return update_owner_resource(db=db, resource_id=resource_id, data=data, owner_id=current_owner.id if current_owner else None)
 
 

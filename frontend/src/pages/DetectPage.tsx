@@ -81,35 +81,12 @@ export const DetectPage: React.FC<DetectPageProps> = ({
       .catch(err => console.log('Could not load model info:', err));
   }, []);
 
-  const handleSelectSample = async (sample: typeof sampleCropImages[0]) => {
-    setSelectedCrop(sample.crop);
-    setSelectedArea(sample.affected_area || 'Leaf');
-    setPreviewUrl(sample.url);
-    setErrorMsg(null);
-    setStep(3);
-
-    // Fetch sample image as actual File object to ensure real ML inference execution
-    try {
-      const response = await fetch(sample.url);
-      const blob = await response.blob();
-      const sampleFile = new File([blob], `${sample.id}.jpg`, { type: 'image/jpeg' });
-      setSelectedImage(sampleFile);
-    } catch (e) {
-      console.warn("Could not convert sample to file directly, fallback to URL:", e);
-      setSelectedImage(null);
-    }
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setErrorMsg(null);
-    }
-  };
-
-  const handleStartAnalysis = async () => {
+  const startAnalysisWithImage = async (
+    fileToScan: File | null,
+    cropToScan: string,
+    areaToScan: string,
+    imgUrl?: string | null
+  ) => {
     setStep(4);
     setIsScanning(true);
     setErrorMsg(null);
@@ -117,34 +94,91 @@ export const DetectPage: React.FC<DetectPageProps> = ({
     try {
       // 4-stage realistic scanning progress reflecting real ML stages
       setScanStage('Stage 1/4: Validating photo quality, illumination & focus...');
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 400));
 
-      setScanStage('Stage 2/4: LeafValidator running — rejecting non-leaf objects...');
-      await new Promise(r => setTimeout(r, 700));
+      setScanStage('Stage 2/4: LeafValidator running — verifying foliar structure...');
+      
+      // 15-second request timeout safeguard
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Validation timed out — Please try again')), 15000)
+      );
 
-      setScanStage(`Stage 3/4: CropClassifier analyzing ${selectedCrop} morphology...`);
-      await new Promise(r => setTimeout(r, 650));
+      const fetchPromise = (async () => {
+        if (fileToScan) {
+          return await api.predictDisease(cropToScan, areaToScan, fileToScan);
+        } else if (imgUrl) {
+          return await api.predictDiseaseJson(cropToScan, areaToScan, imgUrl);
+        } else {
+          return await api.predictDisease(cropToScan, areaToScan, undefined);
+        }
+      })();
+
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+
+      // Normalize boolean fields (handling boolean types and string representations)
+      const isPlantLeaf = result.is_plant_leaf === true || (result as any).is_plant_leaf === 'true' || result.is_leaf === true || (result as any).is_leaf === 'true';
+      const isSuccess = result.success === true || (result as any).success === 'true';
+
+      if (!isPlantLeaf || !isSuccess) {
+        // NON_PLANT or invalid quality -> go to rejection card immediately
+        setScanResult(result);
+        setIsScanning(false);
+        setStep(5);
+        return;
+      }
+
+      // Valid leaf detected -> smoothly advance through crop and disease classification
+      setScanStage(`Stage 3/4: CropClassifier analyzing ${cropToScan} morphology...`);
+      await new Promise(r => setTimeout(r, 450));
 
       setScanStage('Stage 4/4: DiseaseClassifier scanning foliar lesion patterns...');
-      await new Promise(r => setTimeout(r, 600));
-
-      let result: DiseaseScanResult;
-      if (selectedImage) {
-        result = await api.predictDisease(selectedCrop, selectedArea, selectedImage);
-      } else if (previewUrl) {
-        result = await api.predictDiseaseJson(selectedCrop, selectedArea, previewUrl);
-      } else {
-        result = await api.predictDisease(selectedCrop, selectedArea, undefined);
-      }
+      await new Promise(r => setTimeout(r, 450));
 
       setScanResult(result);
       setIsScanning(false);
       setStep(5);
     } catch (err: any) {
       setIsScanning(false);
-      setErrorMsg(err.message || 'AI analysis encountered an error. Please try again.');
+      const isTimeout = err.message && err.message.includes('timed out');
+      setErrorMsg(isTimeout ? 'Validation timed out — Please try again' : (err.message || 'ML diagnosis failed. Please try again.'));
       setStep(3);
     }
+  };
+
+  const handleSelectSample = async (sample: typeof sampleCropImages[0]) => {
+    setSelectedCrop(sample.crop);
+    setSelectedArea(sample.affected_area || 'Leaf');
+    setPreviewUrl(sample.url);
+    setErrorMsg(null);
+
+    // Fetch sample image as actual File object to ensure real ML inference execution
+    try {
+      const response = await fetch(sample.url);
+      const blob = await response.blob();
+      const sampleFile = new File([blob], `${sample.id}.jpg`, { type: 'image/jpeg' });
+      setSelectedImage(sampleFile);
+      startAnalysisWithImage(sampleFile, sample.crop, sample.affected_area || 'Leaf', sample.url);
+    } catch (e) {
+      console.warn("Could not convert sample to file directly, fallback to URL:", e);
+      setSelectedImage(null);
+      startAnalysisWithImage(null, sample.crop, sample.affected_area || 'Leaf', sample.url);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setErrorMsg(null);
+      // Immediately run the ML analysis pipeline so valid leaves never get stuck in waiting
+      startAnalysisWithImage(file, selectedCrop, selectedArea, url);
+    }
+  };
+
+  const handleStartAnalysis = () => {
+    startAnalysisWithImage(selectedImage, selectedCrop, selectedArea, previewUrl);
   };
 
   const handleReset = () => {
@@ -460,9 +494,28 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                   <div className="absolute top-2 right-2 bg-emerald-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
                     {selectedCrop} • {selectedArea}
                   </div>
-                  <div className="absolute bottom-2 left-2 bg-slate-900/80 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm flex items-center gap-1 border border-amber-500/30">
-                    <Activity className="w-3 h-3 text-amber-400" />
-                    <span>Waiting for image validation</span>
+                  <div className="absolute bottom-2 left-2 bg-slate-900/90 text-emerald-300 text-[10px] font-bold px-2.5 py-1 rounded-md backdrop-blur-sm flex items-center gap-1.5 border border-emerald-500/30">
+                    {isScanning ? (
+                      <>
+                        <RefreshCw className="w-3 h-3 text-amber-400 animate-spin" />
+                        <span className="text-amber-300">Validating image...</span>
+                      </>
+                    ) : scanResult && (scanResult.is_plant_leaf || scanResult.is_leaf) ? (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span>Plant leaf detected — analyzing disease...</span>
+                      </>
+                    ) : scanResult && (!scanResult.is_plant_leaf && !scanResult.is_leaf) ? (
+                      <>
+                        <AlertTriangle className="w-3 h-3 text-rose-400" />
+                        <span className="text-rose-300">Invalid Image — No Supported Crop Leaf Detected</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span>Ready for ML Analysis</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center justify-center gap-2">
