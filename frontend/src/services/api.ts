@@ -141,9 +141,13 @@ export const api = {
   async getModelInfo(): Promise<ModelInfo> {
     const targetUrl = `${API_BASE}/disease/model-info`;
     try {
-      const res = await fetch(targetUrl, {
+      let res = await fetch(targetUrl, {
         headers: { ...getAuthHeader() }
       });
+      if (res.status === 404) {
+        // Fallback to health endpoint
+        res = await fetch(`${API_BASE}/health`);
+      }
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
         console.error("Model info HTTP error:", res.status, errText);
@@ -164,15 +168,21 @@ export const api = {
       formData.append('image', file);
     }
 
-    const targetUrl = `${API_BASE}/disease/predict`;
-    console.log("Disease API URL:", targetUrl);
-    console.log("Disease API payload:", { crop, affected_area, fileName: file?.name, fileSize: file?.size });
+    const primaryUrl = `${API_BASE}/disease/predict`;
+    const fallbackUrl = `${API_BASE}/predict`;
 
     try {
-      const res = await fetch(targetUrl, {
+      let res = await fetch(primaryUrl, {
         method: 'POST',
         body: formData
       });
+
+      if (res.status === 404) {
+        res = await fetch(fallbackUrl, {
+          method: 'POST',
+          body: formData
+        });
+      }
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
@@ -188,13 +198,11 @@ export const api = {
       }
 
       const data = await res.json();
-      console.log("Disease API Response data:", data);
       return data;
     } catch (err: any) {
-      console.error("Disease API URL:", targetUrl);
       console.error("Disease API error:", err);
       if (err.message && err.message.includes('Failed to fetch')) {
-        throw new Error(`Cannot connect to Backend API at ${API_BASE}. Please ensure the FastAPI backend is running on port 8000.`);
+        throw new Error(`Cannot connect to Backend API at ${API_BASE}. Please ensure the backend is reachable.`);
       }
       throw err;
     }

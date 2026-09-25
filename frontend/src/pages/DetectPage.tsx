@@ -460,6 +460,10 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                   <div className="absolute top-2 right-2 bg-emerald-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
                     {selectedCrop} • {selectedArea}
                   </div>
+                  <div className="absolute bottom-2 left-2 bg-slate-900/80 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm flex items-center gap-1 border border-amber-500/30">
+                    <Activity className="w-3 h-3 text-amber-400" />
+                    <span>Waiting for image validation</span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <label className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-lg cursor-pointer transition-colors">
@@ -587,7 +591,7 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                     ? 'Crop Consistency Mismatch'
                     : scanResult.error_type === 'INSUFFICIENT_QUALITY'
                     ? 'Image Quality Rejected'
-                    : 'Image rejected by trained plant/leaf validator'}
+                    : 'Invalid Image — No Supported Crop Leaf Detected'}
                 </span>
                 
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
@@ -670,10 +674,16 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                   <span>Scan Another Crop</span>
                 </button>
                 {scanResult.is_plant_leaf && scanResult.success && (
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Trained Model Diagnosis Confirmed (Passes LeafValidator)</span>
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-300 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Valid Image — Plant/Leaf Detected</span>
+                    </span>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Trained Model Diagnosis Confirmed</span>
+                    </span>
+                  </div>
                 )}
               </div>
 
