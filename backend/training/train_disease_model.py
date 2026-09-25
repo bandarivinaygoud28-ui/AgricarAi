@@ -161,12 +161,11 @@ def train_disease_model():
     
     print(f"Train: {len(X_train)} | Val: {len(X_val)} | Test: {len(X_test)}")
     
-    # Deep Multi-Layer Gradient Boosted Ensemble
-    clf = HistGradientBoostingClassifier(
-        max_iter=300,
-        learning_rate=0.07,
-        max_leaf_nodes=45,
-        min_samples_leaf=5,
+    # Deep Multi-Layer Tree Ensemble (Inference-Safe, Zero _loss dependency)
+    clf = ExtraTreesClassifier(
+        n_estimators=200,
+        max_depth=20,
+        min_samples_leaf=1,
         random_state=42
     )
     

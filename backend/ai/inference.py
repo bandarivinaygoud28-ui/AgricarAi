@@ -8,14 +8,26 @@ TRAINING_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "tr
 if TRAINING_DIR not in sys.path:
     sys.path.insert(0, TRAINING_DIR)
 
+# Compatibility alias: Map Cython loss module for HistGradientBoostingClassifier unpickling across Linux/Windows/Render
+try:
+    import importlib
+    loss_mod = importlib.import_module("sklearn._loss._loss")
+    if '_loss' not in sys.modules:
+        sys.modules['_loss'] = loss_mod
+except (ImportError, AttributeError):
+    pass
+
 try:
     from inference import pipeline
 except ImportError:
     import importlib.util
     spec = importlib.util.spec_from_file_location("inference", os.path.join(TRAINING_DIR, "inference.py"))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    pipeline = mod.pipeline
+    if spec is not None and spec.loader is not None:
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        pipeline = getattr(mod, "pipeline")
+    else:
+        raise ImportError("Failed to load training/inference.py module spec.")
 
 MODEL_INFO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "model_info.json"))
 

@@ -5,6 +5,16 @@ import joblib
 import numpy as np
 from PIL import Image
 
+# Compatibility alias: Map Cython loss module for HistGradientBoostingClassifier unpickling across Linux/Windows/Render
+try:
+    import sys
+    import importlib
+    loss_mod = importlib.import_module("sklearn._loss._loss")
+    if '_loss' not in sys.modules:
+        sys.modules['_loss'] = loss_mod
+except (ImportError, AttributeError):
+    pass
+
 try:
     from .train_leaf_validator import extract_features as extract_leaf_features
     from .train_crop_classifier import extract_crop_features, CROPS
@@ -36,6 +46,15 @@ class CropDiseaseInferencePipeline:
         leaf_path = os.path.join(MODELS_DIR, "leaf_validator.joblib")
         crop_path = os.path.join(MODELS_DIR, "crop_classifier.joblib")
         disease_path = os.path.join(MODELS_DIR, "crop_disease_model.joblib")
+
+        # Compatibility alias: Map Cython loss module for HistGradientBoostingClassifier unpickling across Linux/Windows
+        try:
+            import importlib
+            loss_mod = importlib.import_module("sklearn._loss._loss")
+            if '_loss' not in sys.modules:
+                sys.modules['_loss'] = loss_mod
+        except (ImportError, AttributeError):
+            pass
 
         if os.path.exists(leaf_path):
             self.leaf_validator = joblib.load(leaf_path)
@@ -143,8 +162,8 @@ class CropDiseaseInferencePipeline:
         if self.leaf_validator is None or self.crop_classifier is None or self.disease_classifier is None:
             self.load_models()
 
-        # Fail-closed if model is missing
-        if self.leaf_validator is None:
+        # Fail-closed if any model is missing
+        if self.leaf_validator is None or self.crop_classifier is None or self.disease_classifier is None:
             return {
                 "success": False,
                 "stage": "plant_validation",
@@ -152,7 +171,7 @@ class CropDiseaseInferencePipeline:
                 "is_leaf": False,
                 "error_type": "MODEL_UNAVAILABLE",
                 "title": "Validation Model Unavailable",
-                "message": "Plant validation model is currently initializing. Please try again shortly.",
+                "message": "Plant validation and disease diagnosis models are currently initializing. Please try again shortly.",
                 "suggestion": "Retry in a few moments."
             }
 

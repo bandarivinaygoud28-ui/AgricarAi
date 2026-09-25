@@ -233,13 +233,11 @@ def train_leaf_validator():
     
     print(f"Train Set: {len(X_train)} | Validation Set: {len(X_val)} | In-Distribution Test Set: {len(X_test)}")
     
-    # 4. Train High-Performance Gradient-Boosted Classifier
-    clf = HistGradientBoostingClassifier(
-        max_iter=300,
-        learning_rate=0.06,
-        max_leaf_nodes=45,
-        min_samples_leaf=10,
-        l2_regularization=0.5,
+    # 4. Train High-Performance Tree Ensemble Classifier (Inference-Safe, Zero _loss dependency)
+    clf = ExtraTreesClassifier(
+        n_estimators=150,
+        max_depth=18,
+        min_samples_leaf=1,
         random_state=42
     )
     
