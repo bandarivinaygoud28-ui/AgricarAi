@@ -122,16 +122,38 @@ export const api = {
     return res.json();
   },
 
+  // Health Check
+  async checkHealth(): Promise<{ status: string; leaf_model_loaded: boolean; disease_model_loaded: boolean; [key: string]: any }> {
+    const targetUrl = `${API_BASE}/health`;
+    try {
+      const res = await fetch(targetUrl);
+      if (!res.ok) {
+        throw new Error(`Health check failed with HTTP ${res.status}`);
+      }
+      return res.json();
+    } catch (err: any) {
+      console.error("Health check error at:", targetUrl, err);
+      throw err;
+    }
+  },
+
   // AI Disease Detection
   async getModelInfo(): Promise<ModelInfo> {
-    const res = await fetch(`${API_BASE}/disease/model-info`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      throw new Error(`Failed to fetch model info (HTTP ${res.status}): ${errText}`);
+    const targetUrl = `${API_BASE}/disease/model-info`;
+    try {
+      const res = await fetch(targetUrl, {
+        headers: { ...getAuthHeader() }
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        console.error("Model info HTTP error:", res.status, errText);
+        throw new Error(`Failed to fetch model info (HTTP ${res.status}): ${errText}`);
+      }
+      return res.json();
+    } catch (err: any) {
+      console.error("Model info error at:", targetUrl, err);
+      throw err;
     }
-    return res.json();
   },
 
   async predictDisease(crop?: string, affected_area: string = "Leaf", file?: File): Promise<DiseaseScanResult> {
@@ -142,44 +164,74 @@ export const api = {
       formData.append('image', file);
     }
 
-    const res = await fetch(`${API_BASE}/disease/predict`, {
-      method: 'POST',
-      body: formData
-    });
+    const targetUrl = `${API_BASE}/disease/predict`;
+    console.log("Disease API URL:", targetUrl);
+    console.log("Disease API payload:", { crop, affected_area, fileName: file?.name, fileSize: file?.size });
 
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      let detailMsg = `HTTP ${res.status}`;
-      try {
-        const parsed = JSON.parse(errText);
-        detailMsg = parsed.detail || parsed.message || detailMsg;
-      } catch (_) {
-        if (errText) detailMsg = errText;
+    try {
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        console.error("Disease API HTTP status:", res.status, "body:", errText);
+        let detailMsg = `HTTP ${res.status}`;
+        try {
+          const parsed = JSON.parse(errText);
+          detailMsg = parsed.detail || parsed.message || detailMsg;
+        } catch (_) {
+          if (errText) detailMsg = errText;
+        }
+        throw new Error(`Disease prediction service error: ${detailMsg}`);
       }
-      throw new Error(`Disease prediction service error: ${detailMsg}`);
-    }
 
-    return res.json();
+      const data = await res.json();
+      console.log("Disease API Response data:", data);
+      return data;
+    } catch (err: any) {
+      console.error("Disease API URL:", targetUrl);
+      console.error("Disease API error:", err);
+      if (err.message && err.message.includes('Failed to fetch')) {
+        throw new Error(`Cannot connect to Backend API at ${API_BASE}. Please ensure the FastAPI backend is running on port 8000.`);
+      }
+      throw err;
+    }
   },
 
   async predictDiseaseJson(crop?: string, affected_area: string = "Leaf", image_url?: string, image_base64?: string): Promise<DiseaseScanResult> {
-    const res = await fetch(`${API_BASE}/predict/json`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify({ crop: crop || "Tomato", affected_area, image_url, image_base64 })
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      let detailMsg = `HTTP ${res.status}`;
-      try {
-        const parsed = JSON.parse(errText);
-        detailMsg = parsed.detail || parsed.message || detailMsg;
-      } catch (_) {
-        if (errText) detailMsg = errText;
+    const targetUrl = `${API_BASE}/predict/json`;
+    console.log("Disease JSON API URL:", targetUrl);
+    try {
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ crop: crop || "Tomato", affected_area, image_url, image_base64 })
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        console.error("Disease JSON API HTTP status:", res.status, "body:", errText);
+        let detailMsg = `HTTP ${res.status}`;
+        try {
+          const parsed = JSON.parse(errText);
+          detailMsg = parsed.detail || parsed.message || detailMsg;
+        } catch (_) {
+          if (errText) detailMsg = errText;
+        }
+        throw new Error(`Disease prediction service error: ${detailMsg}`);
       }
-      throw new Error(`Disease prediction service error: ${detailMsg}`);
+      const data = await res.json();
+      console.log("Disease JSON API Response data:", data);
+      return data;
+    } catch (err: any) {
+      console.error("Disease JSON API URL:", targetUrl);
+      console.error("Disease JSON API error:", err);
+      if (err.message && err.message.includes('Failed to fetch')) {
+        throw new Error(`Cannot connect to Backend API at ${API_BASE}. Please ensure the FastAPI backend is running on port 8000.`);
+      }
+      throw err;
     }
-    return res.json();
   },
 
   async saveScan(scanData: DiseaseScanResult): Promise<any> {

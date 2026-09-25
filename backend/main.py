@@ -16,7 +16,7 @@ from jose import JWTError, jwt
 from database.database import engine, Base, get_db
 from database.models import User, DiseaseScan, Resource, Booking, ResourceRating
 from ai.prediction import generate_prediction
-from ai.inference import predict_crop_disease, get_model_info
+from ai.inference import predict_crop_disease, get_model_info, pipeline
 from market.market_service import (
     get_market_prices,
     get_market_price_history,
@@ -412,14 +412,17 @@ class BookingRequest(BaseModel):
 @app.get("/api/health")
 def health_check():
     m_info = get_model_info()
+    leaf_loaded = pipeline.leaf_validator is not None
+    crop_loaded = pipeline.crop_classifier is not None
+    disease_loaded = pipeline.disease_classifier is not None
     return {
-        "status": "healthy",
+        "status": "ok",
         "service": "AgriCare AI API",
         "version": "2.0.0",
-        "leaf_model_loaded": True,
-        "crop_model_loaded": True,
-        "disease_model_loaded": True,
-        "knowledge_base_loaded": True,
+        "leaf_model_loaded": leaf_loaded,
+        "crop_model_loaded": crop_loaded,
+        "disease_model_loaded": disease_loaded,
+        "knowledge_base_loaded": bool(pipeline.knowledge_base),
         "model_architecture": m_info.get("model_architecture", "Multi-Stage Scikit-Learn / PyTorch Ensemble"),
         "test_accuracy": m_info.get("test_accuracy", 98.6)
     }

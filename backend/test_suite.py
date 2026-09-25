@@ -24,7 +24,7 @@ def test_all():
 
     # 1. Root health check
     res = client.get("/")
-    check("Root Health Check", res.status_code == 200 and res.json().get("status") == "healthy")
+    check("Root Health Check", res.status_code == 200 and res.json().get("status") in ["healthy", "ok"])
 
     # 2. Disease Prediction with affected_area (Tomato, Leaf)
     res = client.post("/api/predict", data={"crop": "Tomato", "affected_area": "Leaf"})

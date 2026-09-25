@@ -427,7 +427,7 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                 <Check className="w-3.5 h-3.5" />
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-bold text-emerald-900">Valid Image (Passes LeafValidator)</p>
+                <p className="text-xs font-bold text-emerald-900">Recommended Leaf Photo Guideline</p>
                 <p className="text-[11px] text-emerald-800 leading-tight">
                   Single crop leaf or foliage, clear focus, natural light, disease spots visible.
                 </p>
@@ -669,10 +669,12 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Scan Another Crop</span>
                 </button>
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Trained Model Diagnosis Confirmed</span>
-                </span>
+                {scanResult.is_plant_leaf && scanResult.success && (
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Trained Model Diagnosis Confirmed (Passes LeafValidator)</span>
+                  </span>
+                )}
               </div>
 
               <DiseaseReport
