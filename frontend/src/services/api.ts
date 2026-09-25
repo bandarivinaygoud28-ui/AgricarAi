@@ -18,17 +18,17 @@ import {
   ModelInfo
 } from '../types';
 
-const DEPLOYED_BACKEND_URL = 'https://agricare-resource-owner-api.onrender.com';
+const DEPLOYED_BACKEND_URL = 'https://hv2026-0051-vortex-backend.onrender.com';
 const LOCAL_BACKEND_URL = 'http://localhost:8000';
 export const LOCAL_API = 'http://localhost:8000/api';
-export const REMOTE_API = 'https://agricare-resource-owner-api.onrender.com/api';
+export const REMOTE_API = 'https://hv2026-0051-vortex-backend.onrender.com/api';
 
 function getInitialApiBase(): string {
   const envUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || '').trim();
   const isBrowser = typeof window !== 'undefined';
   const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-  // If in local development, prioritize local backend server
+  // If in local development, prioritize local backend server unless overridden
   if (isLocalhost) {
     if (envUrl && (envUrl.includes('localhost') || envUrl.includes('127.0.0.1'))) {
       return envUrl;
@@ -37,17 +37,10 @@ function getInitialApiBase(): string {
   }
 
   // If in production / deployed environment (e.g. on Vercel)
-  if (isBrowser) {
-    if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1') && !envUrl.includes('hv2026-0051-vortex-backend')) {
-      return envUrl;
-    }
-    return DEPLOYED_BACKEND_URL;
-  }
-
-  // Build time fallback
-  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1') && !envUrl.includes('hv2026-0051-vortex-backend')) {
+  if (envUrl) {
     return envUrl;
   }
+
   return DEPLOYED_BACKEND_URL;
 }
 

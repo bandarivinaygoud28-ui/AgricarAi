@@ -140,7 +140,7 @@ export const DiseaseReport: React.FC<DiseaseReportProps> = ({
               <span>Visible Symptoms</span>
             </h4>
             <ul className="space-y-2">
-              {report.symptoms.map((sym, idx) => (
+              {(report.symptoms || []).map((sym, idx) => (
                 <li key={idx} className="text-xs sm:text-sm text-slate-700 font-medium flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0"></span>
                   <span>{sym}</span>
@@ -155,7 +155,7 @@ export const DiseaseReport: React.FC<DiseaseReportProps> = ({
               <span>Biological Cause & Pathogen</span>
             </h4>
             <p className="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
-              {report.cause}
+              {report.cause || report.pathogen || 'Foliar infection identified by multi-stage leaf vision analysis.'}
             </p>
           </div>
         </div>
@@ -168,7 +168,7 @@ export const DiseaseReport: React.FC<DiseaseReportProps> = ({
               <span>Immediate Containment Actions</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {report.immediate_actions.map((act, idx) => (
+              {(report.immediate_actions || []).map((act, idx) => (
                 <div key={idx} className="bg-white/80 border border-amber-200/60 p-3 rounded-xl text-xs font-semibold text-slate-800 flex items-start gap-2">
                   <span className="font-bold text-amber-700">{idx + 1}.</span>
                   <span>{act}</span>
@@ -184,7 +184,7 @@ export const DiseaseReport: React.FC<DiseaseReportProps> = ({
             </h4>
             
             <div className="space-y-2">
-              {report.treatment.map((tr, idx) => (
+              {(report.treatment || report.management || []).map((tr, idx) => (
                 <div key={idx} className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 flex items-start gap-2">
                   <span className="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] shrink-0">
                     {idx + 1}
@@ -208,7 +208,7 @@ export const DiseaseReport: React.FC<DiseaseReportProps> = ({
             <span>Long-Term Prevention & Best Practices</span>
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {report.prevention.map((prev, idx) => (
+            {(report.prevention || []).map((prev, idx) => (
               <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0"></span>
                 <span>{prev}</span>
@@ -218,14 +218,14 @@ export const DiseaseReport: React.FC<DiseaseReportProps> = ({
         </div>
 
         {/* Farmer Field Monitoring */}
-        {report.monitoring && report.monitoring.length > 0 && (
+        {((report.monitoring && report.monitoring.length > 0)) && (
           <div className="bg-blue-50/50 border border-blue-200 rounded-2xl p-5 space-y-3">
             <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-blue-700" />
               <span>Farmer Field Monitoring & Next Signs</span>
             </h4>
             <div className="space-y-2">
-              {report.monitoring.map((mon, idx) => (
+              {(report.monitoring || []).map((mon, idx) => (
                 <div key={idx} className="bg-white p-3 rounded-xl border border-blue-200/80 text-xs font-medium text-slate-700 flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5 shrink-0"></span>
                   <span>{mon}</span>
