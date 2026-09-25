@@ -29,6 +29,7 @@ import {
 import { GovernmentScheme, SchemesResponse, LanguageCode } from '../types';
 import { api } from '../services/api';
 import { translations } from '../utils/translations';
+import { isValidExternalUrl } from '../utils/urlHelper';
 
 interface SchemesPageProps {
   language: LanguageCode;
@@ -136,18 +137,6 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
     { id: 'Seeds & Fertilizers', label: 'Seeds & Fertilizer', icon: Sprout },
     { id: 'State Schemes', label: `${farmerState} Schemes`, icon: Building }
   ];
-
-  const isValidUrl = (url?: string): boolean => {
-    if (!url || typeof url !== 'string') return false;
-    const trimmed = url.trim();
-    if (!trimmed || trimmed === '#' || trimmed.startsWith('javascript:')) return false;
-    try {
-      const parsed = new URL(trimmed);
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-    } catch {
-      return false;
-    }
-  };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -532,7 +521,7 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
                     <span>View Details</span>
                   </button>
 
-                  {isValidUrl(scheme.official_url) ? (
+                  {isValidExternalUrl(scheme.official_url) ? (
                     <a
                       href={scheme.official_url}
                       target="_blank"
@@ -549,9 +538,9 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
                       disabled
                       onClick={(e) => e.stopPropagation()}
                       className="py-2.5 px-3 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 font-medium text-xs flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
-                      title="Official website unavailable"
+                      title="Official website currently unavailable"
                     >
-                      <span>Website Unavailable</span>
+                      <span>Official website currently unavailable</span>
                     </button>
                   )}
                 </div>
@@ -686,7 +675,7 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
                   Close
                 </button>
 
-                {isValidUrl(activeModalScheme.official_url) ? (
+                {isValidExternalUrl(activeModalScheme.official_url) ? (
                   <a
                     href={activeModalScheme.official_url}
                     target="_blank"
@@ -702,7 +691,7 @@ export const SchemesPage: React.FC<SchemesPageProps> = ({
                     disabled
                     className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 font-medium text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
                   >
-                    <span>Official website unavailable</span>
+                    <span>Official website currently unavailable</span>
                   </button>
                 )}
               </div>

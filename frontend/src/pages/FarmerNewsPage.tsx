@@ -8,6 +8,7 @@ import {
 import { translations } from '../utils/translations';
 import { api } from '../services/api';
 import { NewsCard } from '../components/NewsCard';
+import { isValidExternalUrl } from '../utils/urlHelper';
 import {
   Newspaper,
   Search,
@@ -30,7 +31,11 @@ import {
   Info,
   Calendar,
   Layers3,
-  Flame
+  Flame,
+  ArrowLeft,
+  ExternalLink,
+  Share2,
+  BookOpen
 } from 'lucide-react';
 
 interface FarmerNewsPageProps {
@@ -39,6 +44,7 @@ interface FarmerNewsPageProps {
 
 export const FarmerNewsPage: React.FC<FarmerNewsPageProps> = ({ language }) => {
   const t = translations[language];
+  const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
 
   // 1. Farmer Location & Profile State from localStorage
   const [district, setDistrict] = useState<string>(() => {
@@ -292,6 +298,186 @@ export const FarmerNewsPage: React.FC<FarmerNewsPageProps> = ({ language }) => {
   const cropCount = sections?.crop_news?.length || articles.filter(a => a.priority_tier === 3).length;
   const mandiCount = sections?.nearby_mandi_news?.length || articles.filter(a => a.priority_tier === 4).length;
   const nationalCount = sections?.india_news?.length || articles.filter(a => a.priority_tier === 5).length;
+
+  // 4. Render Dedicated Full Article Reader View if an article is selected
+  if (selectedArticle) {
+    const isExternalValid = isValidExternalUrl(selectedArticle.url);
+    const contentText = selectedArticle.content || selectedArticle.summary;
+
+    return (
+      <div className="space-y-6 pb-16 max-w-4xl mx-auto animate-fade-in">
+        {/* Navigation & Breadcrumb */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+          <button
+            onClick={() => {
+              setSelectedArticle(null);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl transition-all active:scale-95 cursor-pointer shadow-2xs"
+          >
+            <ArrowLeft className="w-4 h-4 text-emerald-700" />
+            <span>Back to Market News</span>
+          </button>
+
+          <div className="text-xs text-slate-500 flex items-center gap-1.5 font-medium truncate max-w-md">
+            <span>Market News</span>
+            <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
+            <span className="font-semibold text-slate-700 truncate">{selectedArticle.category || 'Agricultural Report'}</span>
+          </div>
+        </div>
+
+        {/* Article Full Details Container */}
+        <article className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden p-6 sm:p-10 space-y-6">
+          {/* Header Badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedArticle.location_tag && (
+              <span className="text-xs font-black text-white bg-slate-900 px-3 py-1 rounded-lg flex items-center gap-1 shadow-2xs">
+                <MapPin className="w-3 h-3 text-emerald-400" />
+                <span>{selectedArticle.location_tag}</span>
+              </span>
+            )}
+            {selectedArticle.relevance_badge && (
+              <span className="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-600 text-white border border-emerald-500 shadow-2xs flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                <span>{selectedArticle.relevance_badge}</span>
+              </span>
+            )}
+            <span className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-lg">
+              {selectedArticle.tier_name || selectedArticle.category}
+            </span>
+          </div>
+
+          {/* Full Untruncated Headline */}
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 leading-tight tracking-tight">
+            {selectedArticle.title}
+          </h1>
+
+          {/* Metadata Row */}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 py-3 border-y border-slate-100 font-medium">
+            <span className="flex items-center gap-1.5 text-slate-700 font-semibold">
+              <Calendar className="w-4 h-4 text-emerald-600" />
+              <span>Published: {selectedArticle.date}</span>
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5 text-slate-700 font-semibold">
+              <Building className="w-4 h-4 text-emerald-600" />
+              <span>Source: {selectedArticle.source}</span>
+            </span>
+            {selectedArticle.crop && (
+              <>
+                <span>•</span>
+                <span className="flex items-center gap-1.5 text-slate-700 font-semibold">
+                  <Wheat className="w-4 h-4 text-emerald-600" />
+                  <span>Crop: {selectedArticle.crop}</span>
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Full Hero Image */}
+          <div className="w-full h-72 sm:h-96 rounded-2xl overflow-hidden bg-slate-100 shadow-inner">
+            <img
+              src={selectedArticle.image_url}
+              alt={selectedArticle.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80';
+              }}
+            />
+          </div>
+
+          {/* Complete Article Content / Report */}
+          <div className="space-y-6 pt-2">
+            {/* Full Agricultural Report */}
+            <div className="p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100 text-slate-800 space-y-3">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-black text-emerald-950">
+                <Sparkles className="w-4 h-4 text-emerald-700" />
+                <span>Complete Agricultural News Briefing</span>
+              </div>
+              <div className="text-sm sm:text-base leading-relaxed text-slate-800 font-normal whitespace-pre-line space-y-4">
+                {contentText}
+              </div>
+            </div>
+
+            {/* Mandi Price Details (if present) */}
+            {selectedArticle.price_info && (
+              <div className="p-5 bg-blue-50/70 rounded-2xl border border-blue-200/80 text-slate-800 space-y-2">
+                <div className="font-extrabold text-xs uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-blue-700" />
+                  <span>Mandi & APMC Market Price Details</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
+                  <div className="bg-white p-3 rounded-xl border border-blue-100">
+                    <span className="text-slate-500 block text-[10px] font-bold">Crop</span>
+                    <strong className="text-slate-900 text-sm">{selectedArticle.price_info.crop}</strong>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-blue-100">
+                    <span className="text-slate-500 block text-[10px] font-bold">Market / APMC</span>
+                    <strong className="text-slate-900 text-sm">{selectedArticle.price_info.market}</strong>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-blue-100">
+                    <span className="text-slate-500 block text-[10px] font-bold">Modal Price</span>
+                    <strong className="text-emerald-700 text-sm">{selectedArticle.price_info.price}</strong>
+                  </div>
+                  {selectedArticle.price_info.price_date && (
+                    <div className="bg-white p-3 rounded-xl border border-blue-100">
+                      <span className="text-slate-500 block text-[10px] font-bold">Reported Date</span>
+                      <strong className="text-slate-900 text-sm">{selectedArticle.price_info.price_date}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Farm Relevance Insight */}
+            {selectedArticle.relevance_reason && (
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-700 space-y-1">
+                <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                  <Wheat className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Why this advisory matters for your farm:</span>
+                </div>
+                <p className="leading-relaxed font-medium pl-5">{selectedArticle.relevance_reason}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Action Footer */}
+          <div className="pt-6 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArticle(null);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+              >
+                ← Back to News Feed
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {isExternalValid ? (
+                <a
+                  href={selectedArticle.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs sm:text-sm font-extrabold transition-all shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
+                >
+                  <span>Read Full Original Article on {selectedArticle.source}</span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              ) : (
+                <div className="text-xs text-slate-500 font-medium italic px-4 py-2.5 bg-slate-100 rounded-xl border border-slate-200">
+                  Official agricultural bulletin / press release
+                </div>
+              )}
+            </div>
+          </div>
+        </article>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-14 max-w-7xl mx-auto">
@@ -560,6 +746,10 @@ export const FarmerNewsPage: React.FC<FarmerNewsPageProps> = ({ language }) => {
                 article={art}
                 language={language}
                 isPriority={art.priority_tier === 1}
+                onSelectArticle={(a) => {
+                  setSelectedArticle(a);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               />
             ))}
           </div>
@@ -596,6 +786,10 @@ export const FarmerNewsPage: React.FC<FarmerNewsPageProps> = ({ language }) => {
                     article={art}
                     language={language}
                     isPriority={true}
+                    onSelectArticle={(a) => {
+                      setSelectedArticle(a);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                   />
                 ))}
               </div>
@@ -626,7 +820,15 @@ export const FarmerNewsPage: React.FC<FarmerNewsPageProps> = ({ language }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {sections.crop_news.map((art) => (
-                  <NewsCard key={art.id} article={art} language={language} />
+                  <NewsCard
+                    key={art.id}
+                    article={art}
+                    language={language}
+                    onSelectArticle={(a) => {
+                      setSelectedArticle(a);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  />
                 ))}
               </div>
             </div>
@@ -656,7 +858,15 @@ export const FarmerNewsPage: React.FC<FarmerNewsPageProps> = ({ language }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {sections.state_news.map((art) => (
-                  <NewsCard key={art.id} article={art} language={language} />
+                  <NewsCard
+                    key={art.id}
+                    article={art}
+                    language={language}
+                    onSelectArticle={(a) => {
+                      setSelectedArticle(a);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  />
                 ))}
               </div>
             </div>
@@ -686,7 +896,15 @@ export const FarmerNewsPage: React.FC<FarmerNewsPageProps> = ({ language }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {sections.nearby_mandi_news.map((art) => (
-                  <NewsCard key={art.id} article={art} language={language} />
+                  <NewsCard
+                    key={art.id}
+                    article={art}
+                    language={language}
+                    onSelectArticle={(a) => {
+                      setSelectedArticle(a);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  />
                 ))}
               </div>
             </div>
@@ -716,7 +934,15 @@ export const FarmerNewsPage: React.FC<FarmerNewsPageProps> = ({ language }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {sections.india_news.map((art) => (
-                  <NewsCard key={art.id} article={art} language={language} />
+                  <NewsCard
+                    key={art.id}
+                    article={art}
+                    language={language}
+                    onSelectArticle={(a) => {
+                      setSelectedArticle(a);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  />
                 ))}
               </div>
             </div>

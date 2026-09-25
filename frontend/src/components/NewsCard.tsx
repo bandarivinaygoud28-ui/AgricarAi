@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { NewsArticle, LanguageCode } from '../types';
 import { translations } from '../utils/translations';
 import { Calendar, Building, X, ExternalLink, MapPin, Eye, Sparkles, Navigation, ShieldCheck, ChevronRight } from 'lucide-react';
+import { isValidExternalUrl } from '../utils/urlHelper';
 
 interface NewsCardProps {
   article: NewsArticle;
   language: LanguageCode;
   isPriority?: boolean;
+  onSelectArticle?: (article: NewsArticle) => void;
 }
 
 const CATEGORY_FALLBACK_MAP: Record<string, string> = {
@@ -36,21 +38,17 @@ const getCategorySpecificFallback = (art: NewsArticle): string => {
   return 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=700&auto=format&fit=crop&q=80';
 };
 
-const isValidUrl = (url?: string): boolean => {
-  if (!url || typeof url !== 'string') return false;
-  const trimmed = url.trim();
-  if (!trimmed || trimmed === '#' || trimmed.startsWith('javascript:')) return false;
-  try {
-    const parsed = new URL(trimmed);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
-
-export const NewsCard: React.FC<NewsCardProps> = ({ article, language, isPriority = false }) => {
+export const NewsCard: React.FC<NewsCardProps> = ({ article, language, isPriority = false, onSelectArticle }) => {
   const t = translations[language];
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleCardClick = () => {
+    if (onSelectArticle) {
+      onSelectArticle(article);
+    } else {
+      setIsModalOpen(true);
+    }
+  };
 
   const getTierColor = (tier?: number) => {
     if (tier === 1) return 'bg-emerald-600 text-white border-emerald-500';
@@ -61,12 +59,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article, language, isPriorit
     return 'bg-slate-800 text-slate-100 border-slate-700';
   };
 
-  const hasFullContent = Boolean(article.content && article.content.length > (article.summary?.length || 0));
-
   return (
     <>
       <div
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleCardClick}
         className={`overflow-hidden flex flex-col bg-white border rounded-2xl transition-all duration-300 group cursor-pointer ${
           isPriority || article.priority_tier === 1
             ? 'border-emerald-300 ring-2 ring-emerald-500/20 shadow-md hover:shadow-xl hover:border-emerald-400'
@@ -151,7 +147,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article, language, isPriorit
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsModalOpen(true);
+                handleCardClick();
               }}
               className="text-xs font-bold text-slate-700 hover:text-emerald-800 flex items-center gap-1.5 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-slate-100 cursor-pointer active:scale-95"
             >
@@ -163,7 +159,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article, language, isPriorit
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsModalOpen(true);
+                handleCardClick();
               }}
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer"
             >
@@ -289,7 +285,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article, language, isPriorit
                   Close
                 </button>
 
-                {isValidUrl(article.url) ? (
+                {isValidExternalUrl(article.url) ? (
                   <a
                     href={article.url}
                     target="_blank"
