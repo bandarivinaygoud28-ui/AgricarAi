@@ -644,6 +644,8 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                     ? 'Crop Consistency Mismatch'
                     : scanResult.error_type === 'INSUFFICIENT_QUALITY'
                     ? 'Image Quality Rejected'
+                    : scanResult.error_type === 'MODEL_UNAVAILABLE' || scanResult.error_type === 'INTERNAL_ERROR'
+                    ? 'Diagnosis Service Notice'
                     : 'Invalid Image — No Supported Crop Leaf Detected'}
                 </span>
                 
@@ -654,19 +656,21 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                     ? '⚠ Crop Mismatch Detected'
                     : scanResult.error_type === 'INSUFFICIENT_QUALITY'
                     ? '❌ Image Quality Too Low'
+                    : scanResult.error_type === 'MODEL_UNAVAILABLE'
+                    ? '⚙️ Service Initializing'
                     : scanResult.title || '❌ Invalid Image for Disease Detection'}
                 </h2>
                 
                 <p className="text-base text-slate-700 font-bold max-w-md mx-auto leading-relaxed">
-                  {scanResult.error_type === 'NON_LEAF_DETECTED'
+                  {scanResult.message || (scanResult.error_type === 'NON_LEAF_DETECTED'
                     ? 'No supported crop leaf was detected.'
-                    : scanResult.message || 'The uploaded image does not appear to contain a crop leaf.'}
+                    : 'The uploaded image could not be processed.')}
                 </p>
 
                 <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-md mx-auto">
-                  {scanResult.error_type === 'NON_LEAF_DETECTED'
+                  {scanResult.suggestion || (scanResult.error_type === 'NON_LEAF_DETECTED'
                     ? 'Please upload a clear photo of the affected crop leaf.'
-                    : scanResult.suggestion || 'Please provide a clear crop leaf photo in natural light.'}
+                    : 'Please provide a clear crop leaf photo in natural light.')}
                 </p>
               </div>
 

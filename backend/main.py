@@ -618,6 +618,29 @@ def update_farmer_profile(
 # 2. AI CROP DISEASE IDENTIFICATION & REPORT ENDPOINTS
 # ============================================================
 
+@app.get("/health")
+@app.get("/api/health")
+def health_check():
+    """
+    Health check endpoint indicating model loading status across all stages.
+    """
+    leaf_loaded = pipeline.leaf_validator is not None
+    crop_loaded = pipeline.crop_classifier is not None
+    disease_loaded = pipeline.disease_classifier is not None
+    return {
+        "status": "healthy" if (leaf_loaded and crop_loaded and disease_loaded) else "degraded",
+        "service": "AgriCare AI Disease Detection Backend",
+        "leaf_model_loaded": leaf_loaded,
+        "crop_model_loaded": crop_loaded,
+        "disease_model_loaded": disease_loaded,
+        "models_status": {
+            "leaf_validator": "loaded" if leaf_loaded else "unavailable",
+            "crop_classifier": "loaded" if crop_loaded else "unavailable",
+            "disease_classifier": "loaded" if disease_loaded else "unavailable"
+        }
+    }
+
+
 @app.get("/api/disease/model-info")
 def get_disease_model_information():
     """
@@ -676,53 +699,77 @@ async def predict_disease_multipart(
     affected_area: str = Form("Leaf"),
     image: Optional[UploadFile] = File(None)
 ):
-    image_bytes = None
-    if image:
-        image_bytes = await image.read()
+    try:
+        image_bytes = None
+        if image:
+            image_bytes = await image.read()
 
-    result = predict_crop_disease(
-        image_bytes=image_bytes,
-        crop_hint=crop,
-        affected_area=affected_area
-    )
+        result = predict_crop_disease(
+            image_bytes=image_bytes,
+            crop_hint=crop,
+            affected_area=affected_area
+        )
 
-    if result.get("success"):
-        eff_crop = result.get("crop", crop)
-        market_data = get_market_prices(crop=eff_crop)
-        weather_data = get_weather_data(crop=eff_crop)
-        result["market_summary"] = market_data.get("summary")
-        result["weather_risk"] = weather_data.get("agricultural_advisory")
+        if result.get("success"):
+            eff_crop = result.get("crop", crop)
+            try:
+                market_data = get_market_prices(crop=eff_crop)
+                weather_data = get_weather_data(crop=eff_crop)
+                result["market_summary"] = market_data.get("summary")
+                result["weather_risk"] = weather_data.get("agricultural_advisory")
+            except Exception as e:
+                print(f"Advisory enrichment error (non-fatal): {e}")
 
-    return result
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error_type": "INTERNAL_ERROR",
+            "title": "Diagnosis Inference Error",
+            "message": f"An error occurred during image processing: {str(e)}",
+            "suggestion": "Please ensure you have uploaded a valid image file and try again."
+        }
 
 
 @app.post("/api/predict/json")
 def predict_disease_json(req: PredictJsonRequest):
-    image_bytes = None
-    if req.image_base64:
-        try:
-            if "," in req.image_base64:
-                b64_str = req.image_base64.split(",")[1]
-            else:
-                b64_str = req.image_base64
-            image_bytes = base64.b64decode(b64_str)
-        except Exception:
-            image_bytes = None
+    try:
+        image_bytes = None
+        if req.image_base64:
+            try:
+                if "," in req.image_base64:
+                    b64_str = req.image_base64.split(",")[1]
+                else:
+                    b64_str = req.image_base64
+                image_bytes = base64.b64decode(b64_str)
+            except Exception:
+                image_bytes = None
 
-    result = predict_crop_disease(
-        image_bytes=image_bytes,
-        crop_hint=req.crop,
-        affected_area=req.affected_area or "Leaf"
-    )
+        result = predict_crop_disease(
+            image_bytes=image_bytes,
+            crop_hint=req.crop,
+            affected_area=req.affected_area or "Leaf"
+        )
 
-    if result.get("success"):
-        eff_crop = result.get("crop", req.crop or "Tomato")
-        market_data = get_market_prices(crop=eff_crop)
-        weather_data = get_weather_data(crop=eff_crop)
-        result["market_summary"] = market_data.get("summary")
-        result["weather_risk"] = weather_data.get("agricultural_advisory")
+        if result.get("success"):
+            eff_crop = result.get("crop", req.crop or "Tomato")
+            try:
+                market_data = get_market_prices(crop=eff_crop)
+                weather_data = get_weather_data(crop=eff_crop)
+                result["market_summary"] = market_data.get("summary")
+                result["weather_risk"] = weather_data.get("agricultural_advisory")
+            except Exception as e:
+                print(f"Advisory enrichment error (non-fatal): {e}")
 
-    return result
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error_type": "INTERNAL_ERROR",
+            "title": "Diagnosis Inference Error",
+            "message": f"An error occurred during image processing: {str(e)}",
+            "suggestion": "Please ensure you have uploaded a valid image file and try again."
+        }
 
 
 @app.post("/api/history")
