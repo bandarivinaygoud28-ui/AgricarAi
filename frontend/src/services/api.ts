@@ -62,6 +62,25 @@ function getAuthHeader(): Record<string, string> {
 export const api = {
   // Auth & Profile
   async login(phone: string, password: string) {
+    try {
+      const res = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.access_token) {
+          localStorage.setItem('agricare_token', data.access_token);
+          localStorage.setItem('agricare_user', JSON.stringify(data.user));
+        }
+        return data;
+      }
+    } catch (_) {
+      // Try /owner/login if /login had a network/routing issue
+    }
+
+    // Fallback to /owner/login
     const res = await fetch(`${API_BASE}/owner/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -559,13 +578,14 @@ export const api = {
     try {
       return await fetchWithFallback(API_BASE);
     } catch (primaryErr) {
-      // If primary failed and was localhost, try remote or vice versa
-      const fallbackBase = API_BASE === LOCAL_API ? REMOTE_API : LOCAL_API;
-      try {
-        return await fetchWithFallback(fallbackBase);
-      } catch {
-        throw primaryErr;
+      if (API_BASE === LOCAL_API) {
+        try {
+          return await fetchWithFallback(REMOTE_API);
+        } catch {
+          throw primaryErr;
+        }
       }
+      throw primaryErr;
     }
   },
 
@@ -603,12 +623,14 @@ export const api = {
     try {
       return await fetchWithFallback(API_BASE);
     } catch (primaryErr) {
-      const fallbackBase = API_BASE === LOCAL_API ? REMOTE_API : LOCAL_API;
-      try {
-        return await fetchWithFallback(fallbackBase);
-      } catch {
-        throw primaryErr;
+      if (API_BASE === LOCAL_API) {
+        try {
+          return await fetchWithFallback(REMOTE_API);
+        } catch {
+          throw primaryErr;
+        }
       }
+      throw primaryErr;
     }
   },
 

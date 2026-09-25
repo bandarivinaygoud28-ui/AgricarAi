@@ -91,17 +91,12 @@ export const DetectPage: React.FC<DetectPageProps> = ({
     setIsScanning(true);
     setErrorMsg(null);
 
-    try {
-      // 4-stage realistic scanning progress reflecting real ML stages
-      setScanStage('Stage 1/4: Validating photo quality, illumination & focus...');
-      await new Promise(r => setTimeout(r, 400));
-
-      setScanStage('Stage 2/4: LeafValidator running — verifying foliar structure...');
-      
-      // 15-second request timeout safeguard
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Validation timed out — Please try again')), 15000)
-      );
+    // Helper to execute API request with controlled timeout
+    const executeFetch = async (timeoutMs: number): Promise<DiseaseScanResult> => {
+      let timeoutId: any;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs);
+      });
 
       const fetchPromise = (async () => {
         if (fileToScan) {
@@ -113,14 +108,41 @@ export const DetectPage: React.FC<DetectPageProps> = ({
         }
       })();
 
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      try {
+        const res = await Promise.race([fetchPromise, timeoutPromise]);
+        return res;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
 
-      // Normalize boolean fields (handling boolean types and string representations)
-      const isPlantLeaf = result.is_plant_leaf === true || (result as any).is_plant_leaf === 'true' || result.is_leaf === true || (result as any).is_leaf === 'true';
+    try {
+      // Stage 1: Quality verification animation
+      setScanStage('Stage 1/4: Validating photo quality, illumination & focus...');
+      await new Promise(r => setTimeout(r, 400));
+
+      // Stage 2: Leaf foliar verification
+      setScanStage('Stage 2/4: LeafValidator running — verifying foliar structure...');
+      
+      let result: DiseaseScanResult;
+      try {
+        // Attempt 1: Sensible 45-second timeout allowing for Render cold start
+        result = await executeFetch(45000);
+      } catch (firstErr: any) {
+        console.warn("Diagnosis Attempt 1 encountered issue or cold start. Waking backend & retrying once...", firstErr);
+        // If Attempt 1 timed out or failed due to backend cold-start, display waking message and retry once
+        setScanStage('Connecting to ML backend (waking instance)... Retrying diagnosis...');
+        await new Promise(r => setTimeout(r, 1500));
+        // Attempt 2: Final 45-second attempt
+        result = await executeFetch(45000);
+      }
+
+      // Normalize boolean fields
+      const isPlantLeaf = result.is_plant_leaf === true || (result as any).is_plant_leaf === 'true' || result.is_leaf === true || (result as any).is_leaf === 'true' || result.is_plant_leaf === undefined;
       const isSuccess = result.success === true || (result as any).success === 'true';
 
-      if (!isPlantLeaf || !isSuccess) {
-        // NON_PLANT or invalid quality -> go to rejection card immediately
+      if (!isSuccess || (result.is_plant_leaf === false || result.is_leaf === false)) {
+        // NON_PLANT, invalid quality, or service notice -> go to rejection card in Step 5
         setScanResult(result);
         setIsScanning(false);
         setStep(5);
@@ -139,8 +161,11 @@ export const DetectPage: React.FC<DetectPageProps> = ({
       setStep(5);
     } catch (err: any) {
       setIsScanning(false);
-      const isTimeout = err.message && err.message.includes('timed out');
-      setErrorMsg(isTimeout ? 'Validation timed out — Please try again' : (err.message || 'ML diagnosis failed. Please try again.'));
+      const isTimeoutOrNetwork = err.message === 'TIMEOUT' || (err.message && (err.message.includes('connect') || err.message.includes('Failed to fetch') || err.message.includes('Network') || err.message.includes('reachable')));
+      setErrorMsg(isTimeoutOrNetwork
+        ? 'Unable to connect to disease detection service. Please try again.'
+        : (err.message || 'ML diagnosis failed. Please try again.')
+      );
       setStep(3);
     }
   };
@@ -453,6 +478,19 @@ export const DetectPage: React.FC<DetectPageProps> = ({
               Target crop: <strong>{selectedCrop}</strong> ({selectedArea}). Take a clear photo of the affected plant leaf.
             </p>
           </div>
+
+          {/* Error Notice Banner if Network / Service issue occurred */}
+          {errorMsg && (
+            <div className="bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl p-4 flex items-start gap-3 animate-fade-in shadow-xs">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 flex-1">
+                <p className="text-xs font-bold text-amber-900">{errorMsg}</p>
+                <p className="text-[11px] text-amber-800">
+                  Tip: Free server instances may take a few seconds to wake up. Click "Run Trained ML Analysis" below to retry.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Good vs Bad Photo Guidance Banner */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
