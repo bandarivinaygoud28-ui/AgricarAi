@@ -6,17 +6,37 @@ export type AffectedAreaType = 'Leaf' | 'Stem' | 'Fruit / Boll' | 'Grain / Cob' 
 
 export interface DiseaseScanResult {
   id?: number;
+  success?: boolean;
+  stage?: string;
+  is_plant_leaf?: boolean;
+  is_leaf?: boolean;
+  plant_confidence?: number;
+  leaf_confidence?: number;
   crop: string;
+  selected_crop?: string;
+  detected_crop?: string;
+  crop_confidence?: number;
+  affected_part?: string;
   affected_area: string;
   disease: string;
+  condition?: string;
   confidence: number;
+  disease_confidence?: number;
+  reason?: string;
   severity: 'Low' | 'Moderate' | 'High' | 'None' | string;
+  pathogen?: string;
   symptoms: string[];
   cause: string;
   immediate_actions: string[];
+  management?: string[];
   treatment: string[];
   prevention: string[];
+  monitoring?: string[];
   disclaimer?: string;
+  error_type?: string;
+  title?: string;
+  message?: string;
+  suggestion?: string;
   weather_risk?: {
     disease_risk: string;
     disease_risk_factors: string[];
@@ -31,6 +51,36 @@ export interface DiseaseScanResult {
   };
   image_url?: string;
   date?: string;
+}
+
+export interface ModelInfo {
+  model_architecture: string;
+  primary_framework: string;
+  training_dataset: string;
+  num_classes: number;
+  supported_crops: string[];
+  leaf_validator: {
+    test_accuracy: number;
+    precision: number;
+    recall: number;
+    f1_score: number;
+  };
+  crop_classifier: {
+    test_accuracy: number;
+    f1_score: number;
+  };
+  disease_classifier: {
+    test_accuracy: number;
+    precision: number;
+    recall: number;
+    f1_score: number;
+  };
+  confidence_thresholds: {
+    leaf_validation_threshold: number;
+    crop_confidence_threshold: number;
+    disease_confidence_threshold: number;
+  };
+  last_trained: string;
 }
 
 export interface MandiInfo {

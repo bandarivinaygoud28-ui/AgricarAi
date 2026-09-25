@@ -1,0 +1,585 @@
+{
+  "Tomato___Early_Blight": {
+    "crop": "Tomato",
+    "condition": "Early Blight",
+    "display_name": "Tomato Early Blight",
+    "pathogen": "Alternaria solani (Fungal)",
+    "severity": "Moderate",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Dark brown to black necrotic spots with characteristic concentric rings (target-board appearance)",
+      "Yellowing chlorotic halo surrounding lesions on older foliage",
+      "Premature leaf drop and senescence starting from lower canopy upwards"
+    ],
+    "cause": "Fungal pathogen Alternaria solani thriving in warm temperatures (24-29°C) accompanied by heavy dew, frequent rains, or overhead irrigation.",
+    "immediate_actions": [
+      "Prune and safely destroy lower infected leaves showing target-like spots",
+      "Discontinue overhead watering immediately to prevent leaf moisture persistence",
+      "Sterilize pruning shears with 70% isopropyl alcohol between plants"
+    ],
+    "management": [
+      "Foliar application of Mancozeb 75% WP @ 2.5 g/L or Chlorothalonil 75% WP @ 2.0 g/L at first visible lesion appearance",
+      "In cases of rapid disease progression, rotate with systemic Azoxystrobin 23% SC @ 1 ml/L or Difenoconazole 25% EC @ 0.5 ml/L",
+      "Repeat application at 7-10 day intervals during humid cloudy weather"
+    ],
+    "prevention": [
+      "Adopt a 2-3 year crop rotation cycle with non-solanaceous crops like maize or legumes",
+      "Apply organic straw or plastic mulch around plant bases to prevent soil-splash inoculation",
+      "Ensure proper plant spacing (60 cm x 45 cm) for optimal air circulation within canopy"
+    ],
+    "monitoring": [
+      "Inspect lower canopy leaves every 3-4 days for concentric target spots",
+      "Monitor canopy humidity and leaf wetness duration following rainfall events"
+    ],
+    "disclaimer": "Fungicide recommendations are provided for educational guidance. Follow local agricultural extension rules and label instructions. Consult a certified agronomist for severe outbreaks."
+  },
+  "Tomato___Late_Blight": {
+    "crop": "Tomato",
+    "condition": "Late Blight",
+    "display_name": "Tomato Late Blight",
+    "pathogen": "Phytophthora infestans (Oomycete)",
+    "severity": "High",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Large, irregular water-soaked pale green to dark brown lesions on leaf edges and tips",
+      "Delicate white fungal-like downy sporulation on the underside of leaves in moist morning conditions",
+      "Rapid foliar browning, collapse, and blackened water-soaked petioles and stems"
+    ],
+    "cause": "Oomycete Phytophthora infestans favored by cool temperatures (15-20°C) with prolonged relative humidity (>90%) and continuous leaf wetness.",
+    "immediate_actions": [
+      "Immediately rogue out and destroy severely blighted plants to prevent rapid spore dispersal",
+      "Halt all overhead sprinkler irrigation and reduce field moisture levels",
+      "Erect physical barriers or treat adjacent unaffected blocks with protective fungicide shield"
+    ],
+    "management": [
+      "Spray Metalaxyl 8% + Mancozeb 64% WP @ 2.5 g/L water thoroughly covering both leaf surfaces",
+      "For curative knockdown during outbreaks, apply Cymoxanil 8% + Mancozeb 64% WP @ 2.0 g/L or Dimethomorph 50% WP @ 1.0 g/L",
+      "Apply copper oxychloride 50% WP @ 3.0 g/L as a protective barrier in early season"
+    ],
+    "prevention": [
+      "Plant certified disease-free transplants and blight-resistant hybrids (e.g., Arka Rakshak)",
+      "Avoid planting tomatoes adjacent to potato fields",
+      "Ensure adequate field drainage to prevent waterlogging and persistent ground humidity"
+    ],
+    "monitoring": [
+      "Daily inspection of leaf undersides during cool, cloudy, or fog-prone mornings",
+      "Track regional disease alert forecasts from local agro-meteorological stations"
+    ],
+    "disclaimer": "Fungicide recommendations are provided for educational guidance. Follow local agricultural extension rules and label instructions. Consult a certified agronomist for severe outbreaks."
+  },
+  "Tomato___Leaf_Curl_Virus": {
+    "crop": "Tomato",
+    "condition": "Leaf Curl Virus",
+    "display_name": "Tomato Leaf Curl Virus (ToLCV)",
+    "pathogen": "Tomato Leaf Curl Begomovirus (Viral)",
+    "severity": "Moderate",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Severe upward curling, puckering, and crinkling of apical leaves",
+      "Pronounced interveinal chlorosis, pale yellowish margin, and thickened leaf lamina",
+      "Stunted bushy plant stature with shortened internodes and extensive flower drop"
+    ],
+    "cause": "Tomato Leaf Curl Begomovirus transmitted persistently by the silverleaf whitefly (Bemisia tabaci).",
+    "immediate_actions": [
+      "Uproot and burn virus-infected plants early to eliminate vector virus reservoirs",
+      "Install bright yellow sticky traps @ 15-20 traps per acre to monitor and reduce whitefly population",
+      "Spray cold-pressed Neem oil (10,000 ppm) @ 3 ml/L as an eco-friendly vector repellent"
+    ],
+    "management": [
+      "Control whitefly vectors with systemic insecticides: Imidacloprid 17.8% SL @ 0.5 ml/L or Thiamethoxam 25% WG @ 0.3 g/L",
+      "Alternate with Spiromesifen 22.9% SC @ 1.0 ml/L or Diafenthiuron 50% WP @ 1.0 g/L to combat vector resistance",
+      "Apply foliar micronutrient blend with zinc and boron to mitigate viral stress on unaffected growth"
+    ],
+    "prevention": [
+      "Plant barrier crops (2-3 dense rows of maize, sorghum, or pearl millet) around the tomato perimeter",
+      "Raise nursery seedlings under 40-mesh insect-proof nylon net covers",
+      "Select ToLCV-tolerant cultivars such as US-440, NS-501, or Arka Ananya"
+    ],
+    "monitoring": [
+      "Check underside of tender apical leaves weekly for whitefly nymphs and adults",
+      "Monitor yellow sticky trap catch counts twice weekly"
+    ],
+    "disclaimer": "Pesticide recommendations are provided for educational guidance. Follow local agricultural extension rules and label instructions. Consult a certified agronomist for severe outbreaks."
+  },
+  "Tomato___Tomato_Leaf_Curl_Virus": {
+    "crop": "Tomato",
+    "condition": "Tomato Leaf Curl Virus",
+    "display_name": "Tomato Leaf Curl Virus (ToLCV)",
+    "pathogen": "Tomato Leaf Curl Begomovirus (Viral)",
+    "severity": "Moderate",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Severe upward curling, puckering, and crinkling of apical leaves",
+      "Pronounced interveinal chlorosis, pale yellowish margin, and thickened leaf lamina",
+      "Stunted bushy plant stature with shortened internodes and extensive flower drop"
+    ],
+    "cause": "Tomato Leaf Curl Begomovirus transmitted persistently by the silverleaf whitefly (Bemisia tabaci).",
+    "immediate_actions": [
+      "Uproot and burn virus-infected plants early to eliminate vector virus reservoirs",
+      "Install bright yellow sticky traps @ 15-20 traps per acre to monitor and reduce whitefly population",
+      "Spray cold-pressed Neem oil (10,000 ppm) @ 3 ml/L as an eco-friendly vector repellent"
+    ],
+    "management": [
+      "Control whitefly vectors with systemic insecticides: Imidacloprid 17.8% SL @ 0.5 ml/L or Thiamethoxam 25% WG @ 0.3 g/L",
+      "Alternate with Spiromesifen 22.9% SC @ 1.0 ml/L or Diafenthiuron 50% WP @ 1.0 g/L to combat vector resistance",
+      "Apply foliar micronutrient blend with zinc and boron to mitigate viral stress on unaffected growth"
+    ],
+    "prevention": [
+      "Plant barrier crops (2-3 dense rows of maize, sorghum, or pearl millet) around the tomato perimeter",
+      "Raise nursery seedlings under 40-mesh insect-proof nylon net covers",
+      "Select ToLCV-tolerant cultivars such as US-440, NS-501, or Arka Ananya"
+    ],
+    "monitoring": [
+      "Check underside of tender apical leaves weekly for whitefly nymphs and adults",
+      "Monitor yellow sticky trap catch counts twice weekly"
+    ],
+    "disclaimer": "Pesticide recommendations are provided for educational guidance. Follow local agricultural extension rules and label instructions. Consult a certified agronomist for severe outbreaks."
+  },
+  "Tomato___Healthy": {
+    "crop": "Tomato",
+    "condition": "Healthy",
+    "display_name": "Tomato (Healthy Leaf)",
+    "pathogen": "None (Non-Pathogenic)",
+    "severity": "None",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Vibrant green, uniform leaf coloration without chlorosis, spots, or curling",
+      "Turgid foliage with active photosynthetic surface and clear leaf venation",
+      "Robust vegetative growth and healthy terminal shoots"
+    ],
+    "cause": "Optimal crop management, balanced fertility, adequate soil moisture, and absence of insect or pathogen pressure.",
+    "immediate_actions": [
+      "Continue regular irrigation schedule based on soil moisture tensiometer readings",
+      "Maintain periodic routine crop scouting across all field sections"
+    ],
+    "management": [
+      "No chemical fungicides or insecticides required",
+      "Optional application of organic bio-stimulant or seaweed extract @ 2 ml/L to reinforce vigor"
+    ],
+    "prevention": [
+      "Maintain balanced N-P-K fertilization according to Soil Health Card guidelines",
+      "Keep field bunds and perimeter free of solanaceous weed hosts"
+    ],
+    "monitoring": [
+      "Routine weekly visual scouting for early warning signs of vector insects or foliar spots"
+    ],
+    "disclaimer": "Crop is healthy. Continue standard agronomic practices."
+  },
+  "Paddy___Rice_Blast": {
+    "crop": "Paddy",
+    "condition": "Rice Blast",
+    "display_name": "Paddy Rice Blast",
+    "pathogen": "Magnaporthe oryzae (Fungal)",
+    "severity": "High",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Spindle-shaped or diamond-shaped lesions with grey or whitish centers and brown margins on leaves",
+      "Lesions enlarge and coalesce, causing complete foliar drying and scorched appearance",
+      "Collar rot and dark necrotic nodal lesions under severe infestation"
+    ],
+    "cause": "Magnaporthe oryzae fungus favored by high relative humidity (>90%), prolonged leaf wetness (dew), and excessive nitrogenous fertilizer application.",
+    "immediate_actions": [
+      "Immediately suspend top-dressing of nitrogenous fertilizers",
+      "Maintain optimal water layer in paddy fields to reduce blast susceptibility",
+      "Isolate severely blasted nursery beds with protective fungicide barrier"
+    ],
+    "management": [
+      "Foliar spray of Tricyclazole 75% WP @ 0.6 g/L or Isoprothiolane 40% EC @ 1.5 ml/L",
+      "Alternatively, apply Azoxystrobin 18.2% + Difenoconazole 11.4% SC @ 1.0 ml/L at first appearance",
+      "Repeat spray 10-12 days later if favorable weather persists"
+    ],
+    "prevention": [
+      "Seed treatment with Tricyclazole 75% WP @ 2 g/kg seed or Carbendazim 50% WP @ 2 g/kg seed",
+      "Avoid excessive and unbalanced application of urea; apply nitrogen in 3-4 split doses with potash",
+      "Adopt blast-tolerant varieties recommended by ICAR / regional agricultural university"
+    ],
+    "monitoring": [
+      "Scout nursery and tillering stage crops weekly, especially after overcast rainy days",
+      "Inspect leaf blades in early morning for spindle-shaped lesions"
+    ],
+    "disclaimer": "Fungicide recommendations are provided for educational guidance. Follow local agricultural extension rules and label instructions. Consult a certified agronomist for severe outbreaks."
+  },
+  "Paddy___Brown_Spot": {
+    "crop": "Paddy",
+    "condition": "Brown Spot",
+    "display_name": "Paddy Brown Spot",
+    "pathogen": "Bipolaris oryzae (Fungal)",
+    "severity": "Moderate",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Small, circular to oval dark brown spots uniformly scattered across leaf blades",
+      "Mature lesions feature grey or light brown centers with distinct yellow halos",
+      "Premature leaf yellowing and reduced grain filling"
+    ],
+    "cause": "Fungal pathogen Bipolaris oryzae typically prevalent in nutrient-deficient (especially potassium, manganese, and silicon) or water-stressed soils.",
+    "immediate_actions": [
+      "Correct water stress and ensure consistent field moisture",
+      "Apply potassium and micronutrient foliar sprays to boost plant defense"
+    ],
+    "management": [
+      "Spray Mancozeb 75% WP @ 2.5 g/L or Propiconazole 25% EC @ 1 ml/L",
+      "Apply Carbendazim 12% + Mancozeb 63% WP (Saaf) @ 2 g/L during active tillering",
+      "Ensure uniform canopy coverage with adequate spray volume (200 L/acre)"
+    ],
+    "prevention": [
+      "Perform seed treatment with Thiram 75% WP @ 3 g/kg seed before sowing",
+      "Incorporate balanced fertilization based on soil testing, ensuring adequate potash application",
+      "Amend zinc and silicon deficiencies in nursery and main field"
+    ],
+    "monitoring": [
+      "Inspect seedling and vegetative stages weekly for brown oval lesions",
+      "Check soil moisture and nutrient status regularly"
+    ],
+    "disclaimer": "Fungicide recommendations are provided for educational guidance. Follow local agricultural extension rules and label instructions."
+  },
+  "Paddy___Healthy": {
+    "crop": "Paddy",
+    "condition": "Healthy",
+    "display_name": "Paddy (Healthy Crop)",
+    "pathogen": "None (Non-Pathogenic)",
+    "severity": "None",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Lush green, erect tillers with clear uniform leaf blades",
+      "Absence of spindle spots, chlorosis, or necrotic margins",
+      "Strong active tillering and healthy white root system"
+    ],
+    "cause": "Balanced water management, optimal fertilization, and favorable microclimate.",
+    "immediate_actions": [
+      "Maintain recommended standing water depth (2-5 cm during tillering)",
+      "Continue scheduled weed and water regulation"
+    ],
+    "management": [
+      "No chemical application required",
+      "Maintain split nitrogen schedule with recommended muriate of potash"
+    ],
+    "prevention": [
+      "Practice alternate wetting and drying (AWD) to strengthen root health and conserve water",
+      "Maintain clean bunds to deter stem borers and rodents"
+    ],
+    "monitoring": [
+      "Weekly scouting for leaf folder and blast initial symptoms"
+    ],
+    "disclaimer": "Crop is healthy. Continue standard agronomic practices."
+  },
+  "Cotton___Cotton_Leaf_Curl": {
+    "crop": "Cotton",
+    "condition": "Cotton Leaf Curl",
+    "display_name": "Cotton Leaf Curl Virus (CLCuV)",
+    "pathogen": "Cotton Leaf Curl Virus (Begomovirus)",
+    "severity": "High",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Upward or downward rolling/curling of leaf margins accompanied by thick dark green veins",
+      "Vein thickening and enation (leaf-like outgrowths) on the underside of main leaf veins",
+      "Stunting of plants with reduced square and boll formation"
+    ],
+    "cause": "Begomovirus transmitted by the whitefly (Bemisia tabaci); spreads rapidly under hot, dry spells interspersed with humid conditions.",
+    "immediate_actions": [
+      "Rogue out and bury severely curled plants in early vegetative stage (<60 DAS)",
+      "Install yellow sticky traps @ 20 traps/acre at crop canopy height",
+      "Eradicate alternate weed hosts (Abutilon indicum, Parthenium) around field borders"
+    ],
+    "management": [
+      "Control whitefly vectors with Pyriproxyfen 10% + Clothianidin 5% EC @ 1.5 ml/L",
+      "Alternate with Flonicamid 50% WG @ 0.4 g/L or Afidopyropen 50 g/L DC @ 2 ml/L",
+      "Avoid synthetic pyrethroids which induce whitefly resurgence"
+    ],
+    "prevention": [
+      "Cultivate CLCuD-resistant Bt cotton hybrids approved by regional research institutes",
+      "Synchronize sowing in the block to avoid staggered vector breeding",
+      "Grow 2-3 rows of pearl millet or sorghum as vector barrier"
+    ],
+    "monitoring": [
+      "Scout top 3 leaves of 20 random plants weekly for whitefly counts and vein clearing",
+      "Trigger control when whitefly ETL reaches 6-8 adults/leaf"
+    ],
+    "disclaimer": "Pesticide recommendations are provided for educational guidance. Follow local agricultural extension rules and label instructions."
+  },
+  "Cotton___Healthy": {
+    "crop": "Cotton",
+    "condition": "Healthy",
+    "display_name": "Cotton (Healthy Leaf)",
+    "pathogen": "None (Non-Pathogenic)",
+    "severity": "None",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Broad, dark green leaves with clear venation and no enation or curling",
+      "Active sympodial branching and normal square retention",
+      "Vigorous apical growth without vector infestation"
+    ],
+    "cause": "Good agronomic management, optimal spacing, and absence of sucking pest vectors.",
+    "immediate_actions": [
+      "Maintain regular irrigation and weeding schedule",
+      "Ensure proper drainage in case of heavy rains"
+    ],
+    "management": [
+      "No chemical application required",
+      "Apply 1% 19:19:19 water-soluble foliar spray during square formation for vigor"
+    ],
+    "prevention": [
+      "Maintain clean borders and install bird perches for natural pest predation",
+      "Apply balanced basal fertilizer with required zinc and magnesium"
+    ],
+    "monitoring": [
+      "Routine weekly scouting for sucking pests on upper leaves"
+    ],
+    "disclaimer": "Crop is healthy. Continue standard agronomic practices."
+  },
+  "Potato___Early_Blight": {
+    "crop": "Potato",
+    "condition": "Early Blight",
+    "display_name": "Potato Early Blight",
+    "pathogen": "Alternaria solani (Fungal)",
+    "severity": "Moderate",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Small, brown angular spots on lower leaves with characteristic concentric rings",
+      "Lesions expand and become delimited by major leaf veins",
+      "Leaves turn chlorotic, dry up, and droop along the stem"
+    ],
+    "cause": "Alternaria solani fungus thriving in alternating dry and wet periods with temperatures between 20-30°C.",
+    "immediate_actions": [
+      "Remove heavily infected lower foliage to reduce secondary spore load",
+      "Avoid sprinkler irrigation during late afternoon or evening"
+    ],
+    "management": [
+      "Spray Chlorothalonil 75% WP @ 2 g/L or Mancozeb 75% WP @ 2.5 g/L preventively",
+      "If disease is spreading, use Fenamidone 10% + Mancozeb 50% WG @ 2 g/L or Azoxystrobin 23% SC @ 1 ml/L",
+      "Ensure adequate spray coverage on both upper and lower canopy"
+    ],
+    "prevention": [
+      "Use certified disease-free seed tubers",
+      "Follow 3-year crop rotation avoiding tomato, brinjal, and chili",
+      "Ensure balanced potassium application to improve foliage resistance"
+    ],
+    "monitoring": [
+      "Scout lower leaves every 3-5 days after tuber initiation",
+      "Check leaf wetness duration after rain or irrigation"
+    ],
+    "disclaimer": "Fungicide recommendations are provided for educational guidance. Follow local agricultural extension rules."
+  },
+  "Potato___Late_Blight": {
+    "crop": "Potato",
+    "condition": "Late Blight",
+    "display_name": "Potato Late Blight",
+    "pathogen": "Phytophthora infestans (Oomycete)",
+    "severity": "High",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Water-soaked dark lesions at leaf margins that expand rapidly across entire leaflets",
+      "Delicate whitish downy mildew on underside of blighted leaves in humid weather",
+      "Rapid stem blackening, total foliage collapse, and rotting tubers with copper-brown decay"
+    ],
+    "cause": "Phytophthora infestans favored by cool temperatures (12-18°C), continuous high humidity (>90%), and rainfall/fog.",
+    "immediate_actions": [
+      "Rogue out and destroy infected vines immediately to prevent tuber wash infection",
+      "Hill up soil properly to protect developing tubers from spore wash",
+      "Stop sprinkler irrigation"
+    ],
+    "management": [
+      "Apply protective Mancozeb 75% WP @ 2.5 g/L or Copper Oxychloride 50% WP @ 3 g/L before disease onset",
+      "At first appearance, spray Metalaxyl 8% + Mancozeb 64% WP @ 2.5 g/L or Dimethomorph 50% WP @ 1 g/L",
+      "Alternate systemic fungicides to prevent pathogen resistance development"
+    ],
+    "prevention": [
+      "Plant blight-resistant potato varieties (e.g., Kufri Girdhari, Kufri Jyoti)",
+      "Use certified disease-free seed tubers and pre-sprout them",
+      "Practice dehaulming (cutting vines) 10-12 days before harvest to avoid tuber contamination"
+    ],
+    "monitoring": [
+      "Daily inspection of crop canopy during cool foggy or rainy periods",
+      "Watch for blight forecast alerts from regional agro-meteorological units"
+    ],
+    "disclaimer": "Fungicide recommendations are provided for educational guidance. Follow local agricultural extension rules."
+  },
+  "Potato___Healthy": {
+    "crop": "Potato",
+    "condition": "Healthy",
+    "display_name": "Potato (Healthy Leaf)",
+    "pathogen": "None (Non-Pathogenic)",
+    "severity": "None",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Dark green, lush foliage with vigorous compound leaves",
+      "No water-soaked lesions, target spots, or chlorosis",
+      "Erect stems with healthy stolon development below ground"
+    ],
+    "cause": "Healthy seed tubers, adequate soil moisture, balanced nutrition, and clean field hygiene.",
+    "immediate_actions": [
+      "Maintain timely earthing-up to prevent tuber exposure to sunlight and pathogens",
+      "Maintain optimum furrow irrigation"
+    ],
+    "management": [
+      "No chemical application required",
+      "Ensure proper earthing-up and weed control"
+    ],
+    "prevention": [
+      "Maintain adequate soil drainage to prevent waterlogging",
+      "Apply balanced potassium and phosphorus for strong tuberization"
+    ],
+    "monitoring": [
+      "Periodic scouting for early signs of foliar blight or aphid vectors"
+    ],
+    "disclaimer": "Crop is healthy. Continue standard agronomic practices."
+  },
+  "Chilli___Leaf_Curl": {
+    "crop": "Chilli",
+    "condition": "Chilli Leaf Curl",
+    "display_name": "Chilli Leaf Curl Virus (ChiLCV)",
+    "pathogen": "Chilli Leaf Curl Virus (Begomovirus)",
+    "severity": "Moderate",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Upward curling of leaf margins, puckering, and severe reduction in leaf size",
+      "Thickened veins, shortened internodes, and stunted bushy plant growth",
+      "Flower bud shedding and malformed, small fruit development"
+    ],
+    "cause": "Begomovirus transmitted by silverleaf whitefly (Bemisia tabaci) and thrips (Scirtothrips dorsalis).",
+    "immediate_actions": [
+      "Remove and destroy virus-affected plants in early vegetative stage",
+      "Install yellow and blue sticky traps @ 15-20 traps/acre for whiteflies and thrips",
+      "Spray neem seed kernel extract (NSKE 5%) @ 50 ml/L as an organic deterrent"
+    ],
+    "management": [
+      "Spray Diafenthiuron 50% WP @ 1.2 g/L or Fipronil 5% SC @ 1.5 ml/L for vector management",
+      "Alternate with Spiromesifen 22.9% SC @ 1 ml/L or Acetamiprid 20% SP @ 0.3 g/L",
+      "Apply micro-nutrient mixture (Zinc + Boron + Magnesium) foliar spray @ 2 g/L"
+    ],
+    "prevention": [
+      "Raise seedlings under 40-mesh insect-proof nylon net",
+      "Plant 2-3 rows of maize or sorghum as border trap crops",
+      "Select virus-tolerant chili varieties"
+    ],
+    "monitoring": [
+      "Inspect underside of young leaves for thrips and whiteflies twice weekly",
+      "Monitor trap catches regularly"
+    ],
+    "disclaimer": "Pesticide recommendations are provided for educational guidance. Follow local agricultural extension rules."
+  },
+  "Chilli___Chilli_Leaf_Curl": {
+    "crop": "Chilli",
+    "condition": "Chilli Leaf Curl",
+    "display_name": "Chilli Leaf Curl Virus (ChiLCV)",
+    "pathogen": "Chilli Leaf Curl Virus (Begomovirus)",
+    "severity": "Moderate",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Upward curling of leaf margins, puckering, and severe reduction in leaf size",
+      "Thickened veins, shortened internodes, and stunted bushy plant growth",
+      "Flower bud shedding and malformed, small fruit development"
+    ],
+    "cause": "Begomovirus transmitted by silverleaf whitefly (Bemisia tabaci) and thrips (Scirtothrips dorsalis).",
+    "immediate_actions": [
+      "Remove and destroy virus-affected plants in early vegetative stage",
+      "Install yellow and blue sticky traps @ 15-20 traps/acre for whiteflies and thrips",
+      "Spray neem seed kernel extract (NSKE 5%) @ 50 ml/L as an organic deterrent"
+    ],
+    "management": [
+      "Spray Diafenthiuron 50% WP @ 1.2 g/L or Fipronil 5% SC @ 1.5 ml/L for vector management",
+      "Alternate with Spiromesifen 22.9% SC @ 1 ml/L or Acetamiprid 20% SP @ 0.3 g/L",
+      "Apply micro-nutrient mixture (Zinc + Boron + Magnesium) foliar spray @ 2 g/L"
+    ],
+    "prevention": [
+      "Raise seedlings under 40-mesh insect-proof nylon net",
+      "Plant 2-3 rows of maize or sorghum as border trap crops",
+      "Select virus-tolerant chili varieties"
+    ],
+    "monitoring": [
+      "Inspect underside of young leaves for thrips and whiteflies twice weekly",
+      "Monitor trap catches regularly"
+    ],
+    "disclaimer": "Pesticide recommendations are provided for educational guidance. Follow local agricultural extension rules."
+  },
+  "Chilli___Healthy": {
+    "crop": "Chilli",
+    "condition": "Healthy",
+    "display_name": "Chilli (Healthy Leaf)",
+    "pathogen": "None (Non-Pathogenic)",
+    "severity": "None",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Glossy green, flat leaves with clear venation and no curling or mottling",
+      "Active branching with healthy flower buds and fruit set",
+      "Vigorous shoot growth without vector pests"
+    ],
+    "cause": "Optimal soil moisture, balanced nutrition, and absence of sucking pests.",
+    "immediate_actions": [
+      "Maintain consistent irrigation intervals avoiding water stagnation"
+    ],
+    "management": [
+      "No chemical application required",
+      "Apply balanced water-soluble fertilizer 19:19:19 @ 3 g/L for flower setting"
+    ],
+    "prevention": [
+      "Keep field borders clean of weed hosts",
+      "Maintain proper bed drainage"
+    ],
+    "monitoring": [
+      "Routine scouting for thrips or mite activity on tender leaves"
+    ],
+    "disclaimer": "Crop is healthy. Continue standard agronomic practices."
+  },
+  "Maize___Northern_Leaf_Blight": {
+    "crop": "Maize",
+    "condition": "Northern Leaf Blight",
+    "display_name": "Maize Northern Leaf Blight (Turcicum)",
+    "pathogen": "Exserohilum turcicum (Fungal)",
+    "severity": "Moderate",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Long, elliptical, cigar-shaped greyish-green to tan lesions (2.5 to 15 cm long) on leaves",
+      "Lesions coalesce under severe infection, causing extensive blighting and premature leaf death",
+      "Dark fungal sporulation visible within lesions during wet weather"
+    ],
+    "cause": "Fungus Exserohilum turcicum favored by moderate temperatures (18-27°C) and extended dew/leaf wetness periods.",
+    "immediate_actions": [
+      "Ensure proper field drainage and avoid overhead sprinkler irrigation",
+      "Remove lower infected leaves if infection starts early in vegetative stage"
+    ],
+    "management": [
+      "Foliar spray of Mancozeb 75% WP @ 2.5 g/L or Azoxystrobin 18.2% + Difenoconazole 11.4% SC @ 1 ml/L",
+      "Apply Propiconazole 25% EC @ 1 ml/L at first appearance of cigar-shaped lesions",
+      "Repeat spray at 10-14 day interval if weather remains cloudy and humid"
+    ],
+    "prevention": [
+      "Plant resistant maize hybrids recommended for your region",
+      "Practice deep summer plowing to bury crop residues harboring fungus",
+      "Follow 2-year crop rotation with non-host crops like soybean or cotton"
+    ],
+    "monitoring": [
+      "Inspect lower leaves before silking stage for initial cigar-shaped lesions",
+      "Check leaf wetness duration following rainfall"
+    ],
+    "disclaimer": "Fungicide recommendations are provided for educational guidance. Follow local agricultural extension rules."
+  },
+  "Maize___Healthy": {
+    "crop": "Maize",
+    "condition": "Healthy",
+    "display_name": "Maize (Healthy Leaf)",
+    "pathogen": "None (Non-Pathogenic)",
+    "severity": "None",
+    "affected_part": "Leaf",
+    "symptoms": [
+      "Broad, vibrant green leaves with strong central midrib",
+      "Clean leaf lamina free of necrotic stripes or blights",
+      "Sturdy stalk and robust brace root formation"
+    ],
+    "cause": "Optimal soil nutrients, balanced nitrogen top-dressing, and good agronomic care.",
+    "immediate_actions": [
+      "Maintain adequate soil moisture during critical tasseling and silking stages"
+    ],
+    "management": [
+      "No chemical application required",
+      "Apply scheduled top-dressing of urea with proper soil incorporation"
+    ],
+    "prevention": [
+      "Maintain adequate plant population and row spacing (60 cm x 20 cm)",
+      "Ensure weed-free field during first 30-45 days"
+    ],
+    "monitoring": [
+      "Scout for fall armyworm and foliar blight regularly"
+    ],
+    "disclaimer": "Crop is healthy. Continue standard agronomic practices."
+  }
+}

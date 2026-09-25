@@ -14,7 +14,8 @@ import {
   BookingRecord,
   LanguageCode,
   GovernmentScheme,
-  SchemesResponse
+  SchemesResponse,
+  ModelInfo
 } from '../types';
 
 const DEPLOYED_BACKEND_URL = 'https://agricare-resource-owner-api.onrender.com';
@@ -27,18 +28,19 @@ function getInitialApiBase(): string {
   const isBrowser = typeof window !== 'undefined';
   const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-  // If in local development
+  // If in local development, prioritize local backend server
   if (isLocalhost) {
-    return envUrl || LOCAL_BACKEND_URL;
+    if (envUrl && (envUrl.includes('localhost') || envUrl.includes('127.0.0.1'))) {
+      return envUrl;
+    }
+    return LOCAL_BACKEND_URL;
   }
 
   // If in production / deployed environment (e.g. on Vercel)
   if (isBrowser) {
-    // If envUrl is set and is NOT a localhost URL and not an old legacy host, use it
     if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1') && !envUrl.includes('hv2026-0051-vortex-backend')) {
       return envUrl;
     }
-    // Fallback to deployed Render backend
     return DEPLOYED_BACKEND_URL;
   }
 
@@ -121,30 +123,62 @@ export const api = {
   },
 
   // AI Disease Detection
-  async predictDisease(crop: string, affected_area: string = "Leaf", file?: File): Promise<DiseaseScanResult> {
+  async getModelInfo(): Promise<ModelInfo> {
+    const res = await fetch(`${API_BASE}/disease/model-info`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Failed to fetch model info (HTTP ${res.status}): ${errText}`);
+    }
+    return res.json();
+  },
+
+  async predictDisease(crop?: string, affected_area: string = "Leaf", file?: File): Promise<DiseaseScanResult> {
     const formData = new FormData();
-    formData.append('crop', crop);
+    if (crop) formData.append('crop', crop);
     formData.append('affected_area', affected_area);
     if (file) {
       formData.append('image', file);
     }
 
-    const res = await fetch(`${API_BASE}/predict`, {
+    const res = await fetch(`${API_BASE}/disease/predict`, {
       method: 'POST',
-      headers: { ...getAuthHeader() },
       body: formData
     });
-    if (!res.ok) throw new Error('Disease prediction failed');
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      let detailMsg = `HTTP ${res.status}`;
+      try {
+        const parsed = JSON.parse(errText);
+        detailMsg = parsed.detail || parsed.message || detailMsg;
+      } catch (_) {
+        if (errText) detailMsg = errText;
+      }
+      throw new Error(`Disease prediction service error: ${detailMsg}`);
+    }
+
     return res.json();
   },
 
-  async predictDiseaseJson(crop: string, affected_area: string = "Leaf", image_url?: string, image_base64?: string): Promise<DiseaseScanResult> {
+  async predictDiseaseJson(crop?: string, affected_area: string = "Leaf", image_url?: string, image_base64?: string): Promise<DiseaseScanResult> {
     const res = await fetch(`${API_BASE}/predict/json`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify({ crop, affected_area, image_url, image_base64 })
+      body: JSON.stringify({ crop: crop || "Tomato", affected_area, image_url, image_base64 })
     });
-    if (!res.ok) throw new Error('Disease prediction failed');
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      let detailMsg = `HTTP ${res.status}`;
+      try {
+        const parsed = JSON.parse(errText);
+        detailMsg = parsed.detail || parsed.message || detailMsg;
+      } catch (_) {
+        if (errText) detailMsg = errText;
+      }
+      throw new Error(`Disease prediction service error: ${detailMsg}`);
+    }
     return res.json();
   },
 

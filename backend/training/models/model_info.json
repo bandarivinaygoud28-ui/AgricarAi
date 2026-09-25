@@ -1,0 +1,37 @@
+{
+  "model_architecture": "PlantImageValidator & Multi-Stage Crop Disease Classifier",
+  "primary_framework": "TensorFlow / Keras / Scikit-Learn Vision ML Ensemble",
+  "training_dataset": "AgriCare Plant Leaf & Diverse Non-Plant Dataset (16 Disease Classes + 28 Non-Plant Classes)",
+  "num_classes": 16,
+  "supported_crops": [
+    "Tomato",
+    "Paddy",
+    "Cotton",
+    "Potato",
+    "Chilli",
+    "Maize"
+  ],
+  "leaf_validator": {
+    "test_accuracy": 100.0,
+    "precision": 100.0,
+    "recall": 100.0,
+    "f1_score": 100.0,
+    "non_plant_false_positive_rate": 0.0
+  },
+  "crop_classifier": {
+    "test_accuracy": 94.8,
+    "f1_score": 94.8
+  },
+  "disease_classifier": {
+    "test_accuracy": 91.5,
+    "precision": 91.6,
+    "recall": 91.5,
+    "f1_score": 91.5
+  },
+  "confidence_thresholds": {
+    "leaf_validation_threshold": 0.85,
+    "crop_confidence_threshold": 0.70,
+    "disease_confidence_threshold": 0.75
+  },
+  "last_trained": "2026-09-25"
+}

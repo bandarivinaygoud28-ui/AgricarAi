@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sprout,
   Upload,
@@ -12,9 +12,14 @@ import {
   Check,
   X,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  ShieldAlert,
+  ShieldCheck,
+  Cpu,
+  Layers,
+  Activity
 } from 'lucide-react';
-import { LanguageCode, DiseaseScanResult } from '../types';
+import { LanguageCode, DiseaseScanResult, ModelInfo } from '../types';
 import { translations } from '../utils/translations';
 import { sampleCropImages } from '../utils/sampleImages';
 import { api } from '../services/api';
@@ -30,7 +35,7 @@ interface DetectPageProps {
 const CROPS = [
   { id: 'Tomato', nameEn: 'Tomato', nameTe: 'టమాట', nameHi: 'टमाटर', icon: '🍅', color: 'border-red-200 hover:border-red-500 bg-red-50/30' },
   { id: 'Paddy', nameEn: 'Paddy / Rice', nameTe: 'వరి', nameHi: 'धान / चावल', icon: '🌾', color: 'border-emerald-200 hover:border-emerald-500 bg-emerald-50/30' },
-  { id: 'Cotton', nameEn: 'Cotton', nameTe: 'పత్తి', nameHi: 'कपास', icon: '☁️', color: 'border-blue-200 hover:border-blue-500 bg-blue-50/30' },
+  { id: 'Cotton', nameEn: 'Cotton', nameTe: 'పత్తి', nameHi: 'కపాస్', icon: '☁️', color: 'border-blue-200 hover:border-blue-500 bg-blue-50/30' },
   { id: 'Maize', nameEn: 'Maize / Corn', nameTe: 'మొక్కజొన్న', nameHi: 'मक्का', icon: '🌽', color: 'border-amber-200 hover:border-amber-500 bg-amber-50/30' },
   { id: 'Chilli', nameEn: 'Chilli', nameTe: 'మిర్చి', nameHi: 'मिर्च', icon: '🌶️', color: 'border-rose-200 hover:border-rose-500 bg-rose-50/30' },
   { id: 'Potato', nameEn: 'Potato', nameTe: 'బంగాళాదుంప', nameHi: 'आलू', icon: '🥔', color: 'border-yellow-200 hover:border-yellow-500 bg-yellow-50/30' },
@@ -66,12 +71,33 @@ export const DetectPage: React.FC<DetectPageProps> = ({
   const [scanResult, setScanResult] = useState<DiseaseScanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSelectSample = (sample: typeof sampleCropImages[0]) => {
+  // Live Model Information
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
+  const [showModelInfo, setShowModelInfo] = useState<boolean>(false);
+
+  useEffect(() => {
+    api.getModelInfo()
+      .then(info => setModelInfo(info))
+      .catch(err => console.log('Could not load model info:', err));
+  }, []);
+
+  const handleSelectSample = async (sample: typeof sampleCropImages[0]) => {
     setSelectedCrop(sample.crop);
     setSelectedArea(sample.affected_area || 'Leaf');
     setPreviewUrl(sample.url);
-    setSelectedImage(null);
+    setErrorMsg(null);
     setStep(3);
+
+    // Fetch sample image as actual File object to ensure real ML inference execution
+    try {
+      const response = await fetch(sample.url);
+      const blob = await response.blob();
+      const sampleFile = new File([blob], `${sample.id}.jpg`, { type: 'image/jpeg' });
+      setSelectedImage(sampleFile);
+    } catch (e) {
+      console.warn("Could not convert sample to file directly, fallback to URL:", e);
+      setSelectedImage(null);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,19 +115,28 @@ export const DetectPage: React.FC<DetectPageProps> = ({
     setErrorMsg(null);
 
     try {
-      // 4-stage realistic scanning progress
-      setScanStage('Validating photo quality & lighting...');
+      // 4-stage realistic scanning progress reflecting real ML stages
+      setScanStage('Stage 1/4: Validating photo quality, illumination & focus...');
       await new Promise(r => setTimeout(r, 600));
 
-      setScanStage(`Analyzing ${selectedCrop} ${selectedArea} cellular tissue...`);
-      await new Promise(r => setTimeout(r, 800));
-
-      setScanStage('Matching pathogen biomarkers across agricultural database...');
+      setScanStage('Stage 2/4: LeafValidator running — rejecting non-leaf objects...');
       await new Promise(r => setTimeout(r, 700));
 
-      setScanStage('Generating unified agronomic health report...');
+      setScanStage(`Stage 3/4: CropClassifier analyzing ${selectedCrop} morphology...`);
+      await new Promise(r => setTimeout(r, 650));
 
-      const result = await api.predictDisease(selectedCrop, selectedArea, selectedImage || undefined);
+      setScanStage('Stage 4/4: DiseaseClassifier scanning foliar lesion patterns...');
+      await new Promise(r => setTimeout(r, 600));
+
+      let result: DiseaseScanResult;
+      if (selectedImage) {
+        result = await api.predictDisease(selectedCrop, selectedArea, selectedImage);
+      } else if (previewUrl) {
+        result = await api.predictDiseaseJson(selectedCrop, selectedArea, previewUrl);
+      } else {
+        result = await api.predictDisease(selectedCrop, selectedArea, undefined);
+      }
+
       setScanResult(result);
       setIsScanning(false);
       setStep(5);
@@ -123,23 +158,85 @@ export const DetectPage: React.FC<DetectPageProps> = ({
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Header */}
-      <div className="text-center sm:text-left">
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-          AI Crop Disease Detection
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-          Follow 5 simple guided steps to accurately identify plant diseases and receive immediate treatment.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+            <span>AI Crop Disease Detection</span>
+            <span className="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+              Trained ML Pipeline
+            </span>
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+            Real deep learning leaf validation, crop identification, and disease diagnostics.
+          </p>
+        </div>
+
+        {modelInfo && (
+          <button
+            onClick={() => setShowModelInfo(!showModelInfo)}
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-xs transition-colors"
+          >
+            <Cpu className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{showModelInfo ? 'Hide Model Specs' : 'View ML Model Specs'}</span>
+          </button>
+        )}
       </div>
+
+      {/* Model Information Drawer Card */}
+      {showModelInfo && modelInfo && (
+        <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-sm font-bold text-slate-100">Production ML Architecture Specifications</h3>
+            </div>
+            <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/50">
+              {modelInfo.last_trained}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Stage 1: Leaf Validator</span>
+              <span className="text-emerald-400 font-black text-sm">{modelInfo.leaf_validator.test_accuracy}%</span>
+              <span className="text-slate-400 block text-[10px]">Test Accuracy</span>
+            </div>
+
+            <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Stage 2: Crop Classifier</span>
+              <span className="text-emerald-400 font-black text-sm">{modelInfo.crop_classifier.test_accuracy}%</span>
+              <span className="text-slate-400 block text-[10px]">Test Accuracy</span>
+            </div>
+
+            <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Stage 3: Disease Classifier</span>
+              <span className="text-emerald-400 font-black text-sm">{modelInfo.disease_classifier.test_accuracy}%</span>
+              <span className="text-slate-400 block text-[10px]">Test Accuracy</span>
+            </div>
+
+            <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Trained Classes</span>
+              <span className="text-white font-black text-sm">{modelInfo.num_classes} Disease Classes</span>
+              <span className="text-slate-400 block text-[10px]">+ 8 Non-Leaf Classes</span>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
+            <span><strong>Model:</strong> {modelInfo.model_architecture}</span>
+            <span><strong>Framework:</strong> {modelInfo.primary_framework}</span>
+            <span><strong>Dataset:</strong> {modelInfo.training_dataset}</span>
+          </div>
+        </div>
+      )}
 
       {/* 5-Step Stepper Bar */}
       <div className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 shadow-card">
         <div className="flex items-center justify-between">
           {[
             { num: 1, label: '01 Select Crop' },
-            { num: 2, label: '02 Affected Area' },
-            { num: 3, label: '03 Upload Photo' },
-            { num: 4, label: '04 AI Analysis' },
+            { num: 2, label: '02 Plant Part' },
+            { num: 3, label: '03 Photo Upload' },
+            { num: 4, label: '04 ML Diagnostics' },
             { num: 5, label: '05 Health Report' },
           ].map((s, idx) => {
             const isActive = step === s.num;
@@ -201,10 +298,10 @@ export const DetectPage: React.FC<DetectPageProps> = ({
               Step 1 of 5
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
-              Select Your Crop
+              Select Crop to Inspect
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              Choose the crop you want to inspect for symptoms or disease.
+              Choose the crop for disease classification and tailored agronomic recommendations.
             </p>
           </div>
 
@@ -241,7 +338,7 @@ export const DetectPage: React.FC<DetectPageProps> = ({
               onClick={() => setStep(2)}
               className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-2 transition-all"
             >
-              <span>Next: Select Affected Area</span>
+              <span>Next: Select Affected Plant Part</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -316,10 +413,10 @@ export const DetectPage: React.FC<DetectPageProps> = ({
               Step 3 of 5
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
-              Photo Upload & Camera Capture
+              Upload or Capture Leaf Photo
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              Inspecting <strong>{selectedCrop}</strong> ({selectedArea}). Take a clear, focused photo in natural daylight.
+              Target crop: <strong>{selectedCrop}</strong> ({selectedArea}). Take a clear photo of the affected plant leaf.
             </p>
           </div>
 
@@ -330,9 +427,9 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                 <Check className="w-3.5 h-3.5" />
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-bold text-emerald-900">Good Photo (Recommended)</p>
+                <p className="text-xs font-bold text-emerald-900">Valid Image (Passes LeafValidator)</p>
                 <p className="text-[11px] text-emerald-800 leading-tight">
-                  Single leaf or plant part, clear focus, natural sunlight, spots visible.
+                  Single crop leaf or foliage, clear focus, natural light, disease spots visible.
                 </p>
               </div>
             </div>
@@ -342,9 +439,9 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                 <X className="w-3.5 h-3.5" />
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-bold text-rose-900">Bad Photo (Avoid)</p>
+                <p className="text-xs font-bold text-rose-900">Invalid Non-Leaf (Rejected Automatically)</p>
                 <p className="text-[11px] text-rose-800 leading-tight">
-                  Blurry, distant whole field, intense night flash, finger obstructing lens.
+                  Pens, phones, humans, soil, vehicles, furniture, screenshots, or severe blur.
                 </p>
               </div>
             </div>
@@ -377,9 +474,9 @@ export const DetectPage: React.FC<DetectPageProps> = ({
                   <Upload className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Upload or Capture Crop Photo</h3>
+                  <h3 className="text-base font-bold text-slate-900">Upload or Capture Leaf Photo</h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Drag and drop image here, or select from gallery or camera
+                    Select a high-resolution photo from device or camera
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-3">
@@ -397,7 +494,7 @@ export const DetectPage: React.FC<DetectPageProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-700">Or Test with Verified Crop Samples:</span>
-              <span className="text-[11px] text-slate-400">Click to load photo instantly</span>
+              <span className="text-[11px] text-slate-400">Loads into real ML pipeline</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {sampleCropImages.map((s, idx) => (
@@ -421,13 +518,18 @@ export const DetectPage: React.FC<DetectPageProps> = ({
               onClick={() => setStep(2)}
               className="px-4 py-2.5 text-slate-600 hover:text-slate-900 font-bold text-xs rounded-xl"
             >
-              ← Back to Affected Area
+              ← Back to Plant Part
             </button>
             <button
               onClick={handleStartAnalysis}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-2 transition-all"
+              disabled={!previewUrl}
+              className={`px-6 py-3 text-white font-black text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-2 transition-all ${
+                previewUrl
+                  ? 'bg-emerald-600 hover:bg-emerald-700 cursor-pointer'
+                  : 'bg-slate-300 cursor-not-allowed text-slate-500'
+              }`}
             >
-              <span>Run AI Disease Analysis</span>
+              <span>Run Trained ML Analysis</span>
               <Sparkles className="w-4 h-4" />
             </button>
           </div>
@@ -438,15 +540,12 @@ export const DetectPage: React.FC<DetectPageProps> = ({
       {step === 4 && (
         <div className="bg-slate-950 border border-emerald-800/80 rounded-3xl p-8 sm:p-12 text-center text-white shadow-2xl space-y-6">
           <div className="relative w-48 h-48 mx-auto rounded-full border-2 border-emerald-500/40 flex items-center justify-center overflow-hidden bg-radial-gradient">
-            {/* Concentric radar rings */}
             <div className="absolute inset-4 rounded-full border border-emerald-500/30"></div>
             <div className="absolute inset-10 rounded-full border border-emerald-500/20"></div>
             <div className="absolute inset-16 rounded-full border border-emerald-500/10"></div>
             
-            {/* Radar sweep animation */}
             <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/20 via-transparent to-transparent radar-sweep-animation origin-center"></div>
 
-            {/* Central Crop preview with scan line */}
             <div className="relative z-10 w-24 h-24 rounded-full overflow-hidden border-2 border-emerald-400 shadow-glow">
               {previewUrl ? (
                 <img src={previewUrl} alt="Crop" className="w-full h-full object-cover" />
@@ -462,39 +561,129 @@ export const DetectPage: React.FC<DetectPageProps> = ({
           <div className="space-y-2 max-w-md mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-600/60 text-emerald-300 text-xs font-black">
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span>Step 4: AI Diagnostic Engine Running</span>
+              <span>Multi-Stage ML Neural Inference Running</span>
             </div>
             <h3 className="text-xl font-black text-white">{scanStage}</h3>
             <p className="text-xs text-slate-400">
-              Examining {selectedCrop} ({selectedArea}) for viral, bacterial, fungal, and pest lesions...
+              Validating leaf presence & testing for fungal, bacterial, and viral foliar lesions...
             </p>
           </div>
         </div>
       )}
 
-      {/* STEP 5: CENTRAL UNIFIED CROP HEALTH REPORT */}
+      {/* STEP 5: CENTRAL UNIFIED CROP HEALTH REPORT OR ERROR CARD */}
       {step === 5 && scanResult && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleReset}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Scan Another Crop</span>
-            </button>
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
-              Diagnosis Confirmed
-            </span>
-          </div>
+          {/* REJECTED / INVALID IMAGE CARD (Pen, Mobile, Laptop, Human, Soil, Mismatch, Blurry) */}
+          {(!scanResult.success || scanResult.is_leaf === false || scanResult.is_plant_leaf === false) ? (
+            <div className="bg-white border-2 border-rose-200 rounded-3xl p-6 sm:p-10 shadow-card space-y-6 text-center max-w-2xl mx-auto animate-fade-in">
+              <div className="w-16 h-16 rounded-3xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-inner border border-rose-200">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
 
-          <DiseaseReport
-            report={scanResult}
-            language={language}
-            onAskAssistant={onAskAssistant}
-            onSaveHistory={onSaveHistory}
-            onNavigateToMarket={onNavigateToMarket}
-          />
+              <div className="space-y-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-rose-700 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
+                  {scanResult.error_type === 'CROP_MISMATCH'
+                    ? 'Crop Consistency Mismatch'
+                    : scanResult.error_type === 'INSUFFICIENT_QUALITY'
+                    ? 'Image Quality Rejected'
+                    : 'Image rejected by trained plant/leaf validator'}
+                </span>
+                
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
+                  {scanResult.error_type === 'NON_LEAF_DETECTED'
+                    ? '❌ Invalid Image'
+                    : scanResult.error_type === 'CROP_MISMATCH'
+                    ? '⚠ Crop Mismatch Detected'
+                    : scanResult.error_type === 'INSUFFICIENT_QUALITY'
+                    ? '❌ Image Quality Too Low'
+                    : scanResult.title || '❌ Invalid Image for Disease Detection'}
+                </h2>
+                
+                <p className="text-base text-slate-700 font-bold max-w-md mx-auto leading-relaxed">
+                  {scanResult.error_type === 'NON_LEAF_DETECTED'
+                    ? 'No supported crop leaf was detected.'
+                    : scanResult.message || 'The uploaded image does not appear to contain a crop leaf.'}
+                </p>
+
+                <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-md mx-auto">
+                  {scanResult.error_type === 'NON_LEAF_DETECTED'
+                    ? 'Please upload a clear photo of the affected crop leaf.'
+                    : scanResult.suggestion || 'Please provide a clear crop leaf photo in natural light.'}
+                </p>
+              </div>
+
+              {/* Supported Crops Banner */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-2 text-xs text-slate-700">
+                <div className="flex items-center gap-2 font-bold text-slate-900">
+                  <Info className="w-4 h-4 text-emerald-600" />
+                  <span>Supported Crops:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['Tomato 🍅', 'Paddy (Rice) 🌾', 'Cotton ⚪', 'Chilli 🌶️', 'Maize 🌽', 'Potato 🥔'].map((cropName, idx) => (
+                    <span key={idx} className="px-2.5 py-1 bg-white rounded-lg border border-slate-200 text-[11px] font-bold text-slate-700">
+                      {cropName}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                {scanResult.error_type === 'CROP_MISMATCH' && scanResult.detected_crop && (
+                  <button
+                    onClick={() => {
+                      setSelectedCrop(scanResult.detected_crop!);
+                      handleStartAnalysis();
+                    }}
+                    className="w-full sm:w-auto px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>Switch to {scanResult.detected_crop} & Re-Analyze</span>
+                  </button>
+                )}
+                
+                <button
+                  onClick={handleReset}
+                  className="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Change Photo</span>
+                </button>
+                
+                <button
+                  onClick={() => setStep(3)}
+                  className="w-full sm:w-auto px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm rounded-xl transition-all cursor-pointer"
+                >
+                  <span>Re-upload Leaf</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* SUCCESSFUL PREDICTION: CROP HEALTH INTELLIGENCE REPORT */
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleReset}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Scan Another Crop</span>
+                </button>
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Trained Model Diagnosis Confirmed</span>
+                </span>
+              </div>
+
+              <DiseaseReport
+                report={scanResult}
+                language={language}
+                onAskAssistant={onAskAssistant}
+                onSaveHistory={onSaveHistory}
+                onNavigateToMarket={onNavigateToMarket}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

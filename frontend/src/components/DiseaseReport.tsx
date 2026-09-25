@@ -212,6 +212,24 @@ export const DiseaseReport: React.FC<DiseaseReportProps> = ({
           </div>
         </div>
 
+        {/* Farmer Field Monitoring */}
+        {report.monitoring && report.monitoring.length > 0 && (
+          <div className="bg-blue-50/50 border border-blue-200 rounded-2xl p-5 space-y-3">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-blue-700" />
+              <span>Farmer Field Monitoring & Next Signs</span>
+            </h4>
+            <div className="space-y-2">
+              {report.monitoring.map((mon, idx) => (
+                <div key={idx} className="bg-white p-3 rounded-xl border border-blue-200/80 text-xs font-medium text-slate-700 flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5 shrink-0"></span>
+                  <span>{mon}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Two Linked Cards: Weather Risk & Market Prices */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-emerald-950 text-white p-5 rounded-2xl space-y-2">

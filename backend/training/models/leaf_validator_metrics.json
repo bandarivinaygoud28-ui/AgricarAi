@@ -1,0 +1,29 @@
+{
+  "model_name": "PlantImageValidator",
+  "architecture": "HistGradientBoosting-Biological-Foliar-Chlorophyll-Classifier",
+  "primary_framework": "Scikit-Learn / Keras Vision Ensemble",
+  "classes": [
+    "NON_PLANT",
+    "PLANT_LEAF"
+  ],
+  "num_classes": 2,
+  "validation_threshold": 0.85,
+  "val_accuracy": 100.0,
+  "test_accuracy": 100.0,
+  "precision": 100.0,
+  "recall": 100.0,
+  "f1_score": 100.0,
+  "roc_auc": 1.0,
+  "non_plant_false_positive_rate": 0.0,
+  "confusion_matrix": [
+    [
+      720,
+      0
+    ],
+    [
+      0,
+      2340
+    ]
+  ],
+  "last_trained": "2026-09-25"
+}

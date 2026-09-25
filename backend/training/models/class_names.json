@@ -1,0 +1,18 @@
+{
+  "0": "Tomato___Healthy",
+  "1": "Tomato___Early_Blight",
+  "2": "Tomato___Late_Blight",
+  "3": "Tomato___Tomato_Leaf_Curl_Virus",
+  "4": "Paddy___Healthy",
+  "5": "Paddy___Rice_Blast",
+  "6": "Paddy___Brown_Spot",
+  "7": "Cotton___Healthy",
+  "8": "Cotton___Cotton_Leaf_Curl",
+  "9": "Potato___Healthy",
+  "10": "Potato___Early_Blight",
+  "11": "Potato___Late_Blight",
+  "12": "Chilli___Healthy",
+  "13": "Chilli___Chilli_Leaf_Curl",
+  "14": "Maize___Healthy",
+  "15": "Maize___Northern_Leaf_Blight"
+}

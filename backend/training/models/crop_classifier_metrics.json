@@ -1,0 +1,67 @@
+{
+  "model_name": "CropClassifier",
+  "architecture": "ExtraTrees-Morphology-Ensemble",
+  "val_accuracy": 0.9428076256499134,
+  "test_accuracy": 0.9479166666666666,
+  "precision": 0.9483230694154811,
+  "recall": 0.9479166666666666,
+  "f1_score": 0.9478326957271617,
+  "confusion_matrix": [
+    [
+      134,
+      0,
+      0,
+      9,
+      1,
+      0
+    ],
+    [
+      0,
+      102,
+      0,
+      0,
+      0,
+      6
+    ],
+    [
+      0,
+      0,
+      72,
+      0,
+      0,
+      0
+    ],
+    [
+      3,
+      0,
+      0,
+      104,
+      1,
+      0
+    ],
+    [
+      1,
+      0,
+      0,
+      0,
+      71,
+      0
+    ],
+    [
+      0,
+      9,
+      0,
+      0,
+      0,
+      63
+    ]
+  ],
+  "classes": [
+    "Tomato",
+    "Paddy",
+    "Cotton",
+    "Potato",
+    "Chilli",
+    "Maize"
+  ]
+}
