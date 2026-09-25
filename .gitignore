@@ -53,3 +53,5 @@ backend/verify_deployed_system_live.py
 backend/verify_full_system.py
 # IDE settings
 .vscode/
+
+backend/training/models/*.joblib
