@@ -8,7 +8,7 @@ import {
 } from '../types';
 
 // Deployed FastAPI backend on Render
-const DEPLOYED_BACKEND_URL = 'https://agricare-resource-owner-api.onrender.com';
+const DEPLOYED_BACKEND_URL = 'https://hv2026-0051-vortex-backend.onrender.com';
 const LOCAL_BACKEND_URL = 'http://localhost:8000';
 
 function getInitialApiBase(): string {
@@ -212,16 +212,25 @@ export const api = {
   },
 
   async addResource(resourceData: Partial<ResourceItem>): Promise<any> {
-    const res = await safeFetch(`${API_BASE}/owner/resources`, {
+    const postUrl = `${API_BASE}/owner/resources`;
+    console.log('[RESOURCE CREATE]\nPOST URL:', postUrl, '\nREQUEST:', resourceData);
+    const res = await safeFetch(postUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
       body: JSON.stringify(resourceData)
     });
+    console.log('[RESOURCE CREATE]\nSTATUS:', res.status);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      console.error('[RESOURCE CREATE]\nERROR RESPONSE:', err);
       throw new Error(err.detail || 'Failed to add agricultural resource');
     }
-    return res.json();
+    const json = await res.json();
+    console.log(
+      '[RESOURCE CREATE]\nRESPONSE:', json,
+      '\nDATABASE RESOURCE ID:', json.id || json.resource?.id
+    );
+    return json;
   },
 
   async updateResource(resourceId: number, resourceData: Partial<ResourceItem>): Promise<any> {

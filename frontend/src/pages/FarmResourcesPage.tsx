@@ -143,20 +143,20 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
 
   // Filter and sort resources by category and location
   const filteredResources = resources.filter((res) => {
-    // 1. Category Filter
-    if (selectedType !== "All") {
-      const target = selectedType.toLowerCase();
+    // 1. Category Filter: Robust normalization for singular/plural (Tractor, Tractors, etc.)
+    if (selectedType && selectedType.trim().toLowerCase() !== "all") {
+      const target = selectedType.trim().toLowerCase();
       const combined = `${res.resource_type || ''} ${res.title || ''} ${res.category || ''} ${res.type || ''}`.toLowerCase();
 
-      if (target === 'tractor') {
+      if (target.includes('tractor')) {
         if (!combined.includes('tractor')) return false;
-      } else if (target === 'drone spraying') {
+      } else if (target.includes('drone')) {
         if (!combined.includes('drone')) return false;
-      } else if (target === 'harvester') {
+      } else if (target.includes('harvester') || target.includes('combine')) {
         if (!combined.includes('harvester') && !combined.includes('combine')) return false;
-      } else if (target === 'jcb') {
-        if (!combined.includes('jcb') && !combined.includes('earthmover') && !combined.includes('trencher')) return false;
-      } else if (target === 'agricultural equipment') {
+      } else if (target.includes('jcb') || target.includes('earthmover') || target.includes('excavator') || target.includes('trencher')) {
+        if (!combined.includes('jcb') && !combined.includes('earthmover') && !combined.includes('excavator') && !combined.includes('trencher')) return false;
+      } else if (target.includes('equipment') || target.includes('machinery')) {
         const isEquip =
           combined.includes('agricultural equipment') ||
           combined.includes('farm machinery') ||
@@ -177,16 +177,26 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
     }
 
     // 2. Location Filter
-    if (locationFilterInput.trim() && locationFilterInput.trim().toLowerCase() !== 'all') {
+    const rawLoc = (locationFilterInput || '').trim().toLowerCase();
+    const isAllLocations = !rawLoc || 
+      rawLoc === 'all' || 
+      rawLoc === 'all locations' || 
+      rawLoc === 'all areas' || 
+      rawLoc === 'any';
+
+    // When "All Locations" is selected, DO NOT APPLY ANY LOCATION FILTER
+    if (!isAllLocations) {
       const normResLoc = normalizeLocStr(`${res.location || ''} ${(res as any).village || ''} ${(res as any).mandal || ''} ${(res as any).district || ''}`);
       const normSearch = normalizeLocStr(locationFilterInput);
 
-      // Extract significant search tokens
+      // Extract significant search tokens (exclude stop words)
+      const stopWords = new Set(['telangana', 'india', 'near', 'state', 'district', 'mandal', 'village', 'all', 'locations', 'location', 'area', 'areas']);
       const searchTokens = normSearch
         .split(/\s+/)
-        .filter((t) => t.length > 2 && t !== 'telangana' && t !== 'india' && t !== 'near');
+        .filter((t) => t.length > 2 && !stopWords.has(t));
 
       if (searchTokens.length > 0) {
+        // Direct or partial token match
         const tokenMatch = searchTokens.some((tok) => normResLoc.includes(tok));
         if (tokenMatch) return true;
 
@@ -198,7 +208,20 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
             res.latitude,
             res.longitude
           );
-          if (dist <= 60) return true;
+          if (dist <= 80) return true;
+        }
+
+        // Neighboring zones in Hyderabad / Ranga Reddy district cluster
+        // (Karmanghat, Jillelaguda, Champapet, Saroornagar, Meerpet, Badangpet, LB Nagar, Shamshabad, Kummarguda, etc.)
+        const hydRangaReddyCluster = [
+          'karmanghat', 'jillelaguda', 'champapet', 'saroornagar', 'meerpet',
+          'badangpet', 'shamshabad', 'kummarguda', 'kummariguda', 'kandukur',
+          'maheshwaram', 'shadnagar', 'ranga reddy', 'rangareddy', 'hyderabad'
+        ];
+        const searchInCluster = hydRangaReddyCluster.some((c) => normSearch.includes(c));
+        const resInCluster = hydRangaReddyCluster.some((c) => normResLoc.includes(c));
+        if (searchInCluster && resInCluster) {
+          return true;
         }
 
         return false;
@@ -207,6 +230,11 @@ export const FarmResourcesPage: React.FC<FarmResourcesPageProps> = ({
 
     return true;
   });
+
+  // Filter Debug Logging
+  console.log(
+    `[RESOURCE FILTER]\nTOTAL BEFORE FILTER: ${resources.length}\nCATEGORY: ${selectedType}\nLOCATION: ${locationFilterInput || 'All Locations'}\nTOTAL AFTER FILTER: ${filteredResources.length}`
+  );
 
   const handleOpenBookingModal = async (res: FarmResource) => {
     setSelectedResource(res);

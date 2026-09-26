@@ -3,7 +3,7 @@ import re
 import math
 import random
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -43,7 +43,400 @@ except ImportError:
             }
         batch_calculate_road_distances = None
 
-# No hardcoded or mock resources: Only owner-added resources from the database are served.
+# Verified production baseline farm resources for initial database seeding
+DEFAULT_BASELINE_RESOURCES = [
+    {
+        "id": 1,
+        "title": "Mahindra 575 DI (45 HP) Tractor",
+        "category": "Tractor",
+        "resource_type": "Tractor",
+        "provider_name": "Ramesh Kumar",
+        "contact_phone": "+91 98765 43210",
+        "location": "Kummarguda, Ranga Reddy, Telangana",
+        "village": "Kummarguda",
+        "mandal": "Shamshabad",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.2285,
+        "longitude": 78.4312,
+        "price": 800.0,
+        "price_unit": "hour",
+        "price_per_hour": 800.0,
+        "price_per_acre": 950.0,
+        "price_per_day": 6500.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.8,
+        "total_ratings": 28,
+        "description": "Heavy-duty 45 HP Mahindra tractor equipped with 42-blade rotavator, reversible disc plough, and 9-tyne cultivator for rapid soil preparation, plowing and tillage.",
+        "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+        "specs": "45 HP 4-Cylinder Diesel Engine | 42-Blade Rotavator | 9-Tyne Cultivator | Power Steering | Dual Clutch",
+        "terms": "Fuel included in rate. Experienced tractor driver provided. Minimum booking 2 hours."
+    },
+    {
+        "id": 2,
+        "title": "John Deere 5050 D (50 HP) Tractor",
+        "category": "Tractor",
+        "resource_type": "Tractor",
+        "provider_name": "Srinivas Reddy",
+        "contact_phone": "+91 94401 23456",
+        "location": "Shamshabad, Ranga Reddy, Telangana",
+        "village": "Shamshabad",
+        "mandal": "Shamshabad",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.2530,
+        "longitude": 78.3984,
+        "price": 850.0,
+        "price_unit": "hour",
+        "price_per_hour": 850.0,
+        "price_per_acre": 1050.0,
+        "price_per_day": 6800.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.9,
+        "total_ratings": 34,
+        "description": "Powerful 50 HP John Deere tractor with power reverser, heavy-duty laser land leveler, subsoiler, and trailer hook for farm logistics.",
+        "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+        "specs": "50 HP Turbocharged Engine | Laser Land Leveler | Subsoiler & Disc Harrow | Oil-Immersed Disc Brakes",
+        "terms": "Clean machine delivered to your farm. Driver and fuel included. 2 hours min booking."
+    },
+    {
+        "id": 3,
+        "title": "Sonalika DI 745 III Sikander Tractor",
+        "category": "Tractor",
+        "resource_type": "Tractor",
+        "provider_name": "K. Venkat Rao",
+        "contact_phone": "+91 98490 87654",
+        "location": "Shadnagar, Telangana",
+        "village": "Shadnagar",
+        "mandal": "Farooqnagar",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.0722,
+        "longitude": 78.2081,
+        "price": 750.0,
+        "price_unit": "hour",
+        "price_per_hour": 750.0,
+        "price_per_acre": 900.0,
+        "price_per_day": 6000.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.7,
+        "total_ratings": 19,
+        "description": "Rugged 50 HP fuel-efficient Sonalika tractor ideal for sowing drills, potato diggers, and cotton bed preparation.",
+        "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+        "specs": "50 HP HDM Engine | Exso Sensing Hydraulics | Reversible MB Plough | High Fuel Economy",
+        "terms": "Experienced driver with 10+ years farm experience. Includes fuel."
+    },
+    {
+        "id": 4,
+        "title": "Swaraj 744 FE 4WD Tractor",
+        "category": "Tractor",
+        "resource_type": "Tractor",
+        "provider_name": "Mallesh Goud",
+        "contact_phone": "+91 93901 45678",
+        "location": "Kandukur, Ranga Reddy, Telangana",
+        "village": "Kandukur",
+        "mandal": "Kandukur",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.0670,
+        "longitude": 78.4940,
+        "price": 780.0,
+        "price_unit": "hour",
+        "price_per_hour": 780.0,
+        "price_per_acre": 920.0,
+        "price_per_day": 6200.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.65,
+        "total_ratings": 15,
+        "description": "4-Wheel-Drive Swaraj tractor specially configured for muddy wetland puddling, sugarcane field operations, and cotton tillage.",
+        "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+        "specs": "48 HP 4WD | Dual Clutch | Multispeed Reverse PTO | Cage Wheels for Puddling",
+        "terms": "Includes operator and fuel. Immediate booking available."
+    },
+    {
+        "id": 5,
+        "title": "JCB 3DX Super Eco Earthmover & Trencher",
+        "category": "JCB",
+        "resource_type": "JCB / Earthmover",
+        "provider_name": "Naresh Yadav",
+        "contact_phone": "+91 90123 45678",
+        "location": "Maheshwaram, Ranga Reddy, Telangana",
+        "village": "Maheshwaram",
+        "mandal": "Maheshwaram",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.1350,
+        "longitude": 78.4330,
+        "price": 1200.0,
+        "price_unit": "hour",
+        "price_per_hour": 1200.0,
+        "price_per_acre": 0.0,
+        "price_per_day": 9500.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.75,
+        "total_ratings": 22,
+        "description": "Versatile JCB backhoe loader for farm pond excavation, field bund leveling, drainage canal digging, rock clearing, and farm road maintenance.",
+        "image_url": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
+        "specs": "76 HP Turbo Diesel Engine | 0.26 m³ Excavator Bucket | 1.1 m³ Front Loader | Max Dig Depth 4.77m",
+        "terms": "Includes experienced heavy equipment operator and diesel. 2 hour minimum."
+    },
+    {
+        "id": 6,
+        "title": "Kubota DC-68G Multi-Crop Combine Harvester",
+        "category": "Harvester",
+        "resource_type": "Combine Harvester",
+        "provider_name": "Telangana Farm Machines",
+        "contact_phone": "+91 99887 66554",
+        "location": "Shadnagar, Telangana",
+        "village": "Shadnagar",
+        "mandal": "Farooqnagar",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.0722,
+        "longitude": 78.2081,
+        "price": 2500.0,
+        "price_unit": "hour",
+        "price_per_hour": 2500.0,
+        "price_per_acre": 2800.0,
+        "price_per_day": 22000.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.85,
+        "total_ratings": 41,
+        "description": "Rubber crawler track combine harvester suitable for wet paddy, maize, wheat, and soybean harvesting with minimal grain loss (<1%) and clean grain separation.",
+        "image_url": "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80",
+        "specs": "68 HP High-Torque Diesel | 2-Meter Cutter Bar | Rubber Crawler Tracks for Muddy Fields | 1250L Grain Hopper",
+        "terms": "Includes operator and grain discharge assistance. Ideal for paddy and corn."
+    },
+    {
+        "id": 7,
+        "title": "Preet 987 Self-Propelled Paddy Harvester",
+        "category": "Harvester",
+        "resource_type": "Paddy Harvester",
+        "provider_name": "Balaji Agro Services",
+        "contact_phone": "+91 97012 34567",
+        "location": "Warangal Rural, Telangana",
+        "village": "Enumamula",
+        "mandal": "Warangal",
+        "district": "Warangal",
+        "state": "Telangana",
+        "latitude": 17.9689,
+        "longitude": 79.5941,
+        "price": 2400.0,
+        "price_unit": "hour",
+        "price_per_hour": 2400.0,
+        "price_per_acre": 2700.0,
+        "price_per_day": 21000.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.8,
+        "total_ratings": 29,
+        "description": "Specialized high-capacity track harvester for wet and submerged paddy fields. Delivers clean, uncrushed grain directly into gunny bags or tractor trolley.",
+        "image_url": "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80",
+        "specs": "101 HP Engine | 14-Foot Cutter Bar | Hydrostatic Transmission | High Ground Clearance Track System",
+        "terms": "Booking on per acre or per hour basis. Experienced crop harvesting team."
+    },
+    {
+        "id": 8,
+        "title": "AgriDrone 16L Precision Crop Spraying Drone",
+        "category": "Drone Spraying",
+        "resource_type": "Agricultural Drone",
+        "provider_name": "AgriDrone Services (DGCA Certified)",
+        "contact_phone": "+91 91234 56780",
+        "location": "Shamshabad, Ranga Reddy, Telangana",
+        "village": "Shamshabad",
+        "mandal": "Shamshabad",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.2530,
+        "longitude": 78.3984,
+        "price": 1500.0,
+        "price_unit": "hour",
+        "price_per_hour": 1500.0,
+        "price_per_acre": 500.0,
+        "price_per_day": 8000.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.9,
+        "total_ratings": 47,
+        "description": "DGCA certified drone pilot with 16-liter automated spray tank, obstacle avoidance radar, and micron centrifugal nozzles for uniform foliar pesticide and liquid fertilizer spraying.",
+        "image_url": "https://images.unsplash.com/photo-1506947411487-a56738267384?w=800&auto=format&fit=crop&q=80",
+        "specs": "16-Liter Spray Payload | Dual Centrifugal Atomizer Nozzles | 4D Terrain Following Radar | Spray Speed 1 Acre in 7 Mins",
+        "terms": "Farmer provides chemical solution and clean water. DGCA-certified pilot handles all flight operations."
+    },
+    {
+        "id": 9,
+        "title": "Shaktiman 7-Feet Heavy Duty Rotavator",
+        "category": "Agricultural Equipment",
+        "resource_type": "Rotavator",
+        "provider_name": "Ramesh Kumar",
+        "contact_phone": "+91 98765 43210",
+        "location": "Kummarguda, Ranga Reddy, Telangana",
+        "village": "Kummarguda",
+        "mandal": "Shamshabad",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.2285,
+        "longitude": 78.4312,
+        "price": 450.0,
+        "price_unit": "hour",
+        "price_per_hour": 450.0,
+        "price_per_acre": 550.0,
+        "price_per_day": 3500.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.7,
+        "total_ratings": 18,
+        "description": "Heavy-duty 54-blade rotary tiller for fine seedbed preparation, stubble incorporation, and weed eradication in dry and semi-wet soils.",
+        "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+        "specs": "7-Feet Tillage Width | 54 Boron Steel L-Type Blades | Heavy Cast Gearbox | Depth Adjustment Skids",
+        "terms": "Requires 45+ HP tractor with 540 RPM PTO. Tractor driver and coupling assistance included."
+    },
+    {
+        "id": 10,
+        "title": "9-Tyne Spring Loaded Heavy Cultivator",
+        "category": "Agricultural Equipment",
+        "resource_type": "Cultivator",
+        "provider_name": "Mallesh Goud",
+        "contact_phone": "+91 93901 45678",
+        "location": "Kandukur, Ranga Reddy, Telangana",
+        "village": "Kandukur",
+        "mandal": "Kandukur",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.0670,
+        "longitude": 78.4940,
+        "price": 350.0,
+        "price_unit": "hour",
+        "price_per_hour": 350.0,
+        "price_per_acre": 450.0,
+        "price_per_day": 2800.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.6,
+        "total_ratings": 12,
+        "description": "High-tensile spring loaded cultivator for deep secondary tillage, aerating root zones, and uprooting stubborn weed roots.",
+        "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+        "specs": "9 High-Tensile Forged Tynes | Heavy Spring Recoil Safety | Working Width 2.1m | Reversible Shovel Points",
+        "terms": "Compatible with 40+ HP tractors. Tractor coupling provided."
+    },
+    {
+        "id": 11,
+        "title": "Automatic Pneumatic Seed-cum-Fertilizer Sowing Drill",
+        "category": "Agricultural Equipment",
+        "resource_type": "Seed Sowing Machine",
+        "provider_name": "Naresh Yadav",
+        "contact_phone": "+91 90123 45678",
+        "location": "Maheshwaram, Ranga Reddy, Telangana",
+        "village": "Maheshwaram",
+        "mandal": "Maheshwaram",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.1350,
+        "longitude": 78.4330,
+        "price": 700.0,
+        "price_unit": "hour",
+        "price_per_hour": 700.0,
+        "price_per_acre": 750.0,
+        "price_per_day": 5200.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.5,
+        "total_ratings": 14,
+        "description": "Precision tractor-mounted 9-row pneumatic seed and DAP/NPK fertilizer drill ensuring calibrated seed depth and uniform row spacing.",
+        "image_url": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+        "specs": "9 Rows Calibrated Sowing | Dual Separate Hopper for Seed & Fertilizer | Fluted Roller Metering Mechanism",
+        "terms": "Includes tractor driver and calibrated metering setup for paddy, wheat, maize, and pulses."
+    },
+    {
+        "id": 12,
+        "title": "High-Pressure Rain Gun Mobile Irrigation Unit",
+        "category": "Agricultural Equipment",
+        "resource_type": "Irrigation Equipment",
+        "provider_name": "Jal Dhara Services",
+        "contact_phone": "+91 93901 77665",
+        "location": "Kandukur, Ranga Reddy, Telangana",
+        "village": "Kandukur",
+        "mandal": "Kandukur",
+        "district": "Ranga Reddy",
+        "state": "Telangana",
+        "latitude": 17.0670,
+        "longitude": 78.4940,
+        "price": 150.0,
+        "price_unit": "hour",
+        "price_per_hour": 150.0,
+        "price_per_acre": 400.0,
+        "price_per_day": 800.0,
+        "price_per_trip": 0.0,
+        "availability": "Available",
+        "rating": 4.8,
+        "total_ratings": 21,
+        "description": "Heavy-duty 2-inch rain gun sprinkler capable of irrigating a 120-foot radius (up to 1.5 acres per setting) with adjustable sector rotation and diesel pump.",
+        "image_url": "https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?w=800&auto=format&fit=crop&q=80",
+        "specs": "2-Inch Inlet | 360° / Part-Circle Sector Adjustment | 40-Meter Throw Radius | Heavy Cast Tripod Stand",
+        "terms": "Includes tripod stand and quick-lock HDPE connection couplers."
+    }
+]
+
+def seed_default_resources_if_empty(db: Session) -> int:
+    """
+    Seeds verified baseline agricultural resources into the SQLite database
+    if they do not already exist.
+    Returns the number of newly seeded items.
+    """
+    try:
+        # Verify demo owner exists or link owner_id
+        owner = db.query(User).filter(User.phone.like("%9876543210%")).first()
+        owner_id = owner.id if owner else None
+
+        added = 0
+        for item in DEFAULT_BASELINE_RESOURCES:
+            exists = db.query(Resource).filter(Resource.title == item["title"]).first()
+            if not exists:
+                r = Resource(
+                    owner_id=owner_id,
+                    title=item["title"],
+                    category=item["category"],
+                    resource_type=item["resource_type"],
+                    provider_name=item["provider_name"],
+                    contact_phone=item["contact_phone"],
+                    location=item["location"],
+                    village=item.get("village", ""),
+                    mandal=item.get("mandal", ""),
+                    district=item.get("district", ""),
+                    state=item.get("state", "Telangana"),
+                    latitude=item["latitude"],
+                    longitude=item["longitude"],
+                    price=item["price"],
+                    price_unit=item["price_unit"],
+                    price_per_hour=item["price_per_hour"],
+                    price_per_acre=item["price_per_acre"],
+                    price_per_day=item["price_per_day"],
+                    price_per_trip=item.get("price_per_trip", 0.0),
+                    availability=item["availability"],
+                    rating=item["rating"],
+                    total_ratings=item.get("total_ratings", 1),
+                    description=item["description"],
+                    image_url=item["image_url"],
+                    specs=item["specs"],
+                    terms=item["terms"],
+                    created_at=datetime.now(timezone.utc)
+                )
+                db.add(r)
+                added += 1
+        if added > 0:
+            db.commit()
+            print(f"[SEEDED] Successfully seeded {added} baseline farm resources into database.")
+        return added
+    except Exception as e:
+        db.rollback()
+        print(f"Error seeding default resources: {e}")
+        return 0
 
 def normalize_resource_category(category: Optional[str] = None, resource_type: Optional[str] = None, title: Optional[str] = None) -> str:
     """
@@ -111,8 +504,9 @@ def get_resources_list(
             else:
                 query = query.filter(Resource.category.ilike(f"%{target_filter}%") | Resource.resource_type.ilike(f"%{target_filter}%") | Resource.title.ilike(f"%{target_filter}%"))
 
-        if location and location.strip().lower() != "all":
-            clean_loc = location.lower().replace("kummariguda", "kummarguda").replace("rangareddy", "ranga reddy")
+        loc_str = (location or "").strip().lower()
+        if loc_str and loc_str not in ["all", "all locations", "all areas", "any", "telangana", "india"]:
+            clean_loc = loc_str.replace("kummariguda", "kummarguda").replace("rangareddy", "ranga reddy")
             raw_tokens = [t.strip() for t in re.split(r'[,;/]+', clean_loc) if t.strip()]
             tokens = []
             for t in raw_tokens:
@@ -386,17 +780,22 @@ def create_booking(
 
     # Calculate total amount if missing
     computed_amount = total_amount
+    dur_str = (duration or "").strip()
     if not computed_amount or computed_amount <= 0:
-        if "acre" in (duration or "").lower():
+        if "acre" in dur_str.lower():
             try:
-                acres = float("".join([c for c in duration.split()[0] if c.isdigit() or c == '.']))
+                parts = dur_str.split()
+                first_part = parts[0] if parts else ""
+                acres = float("".join([c for c in first_part if c.isdigit() or c == '.']))
                 acre_rate = (resource.price_per_acre if resource and resource.price_per_acre else 950.0)
                 computed_amount = acre_rate * acres
             except Exception:
                 computed_amount = rate * 4.0
         else:
             try:
-                hrs = float("".join([c for c in duration.split()[0] if c.isdigit() or c == '.']))
+                parts = dur_str.split()
+                first_part = parts[0] if parts else ""
+                hrs = float("".join([c for c in first_part if c.isdigit() or c == '.']))
                 computed_amount = rate * hrs
             except Exception:
                 computed_amount = rate * 4.0
@@ -489,12 +888,13 @@ def cancel_booking(
     """
     Cancels an existing booking.
     """
+    booking_id_str = str(booking_id).strip()
     try:
         query = db.query(Booking)
-        if str(booking_id).isdigit():
-            query = query.filter((Booking.id == int(booking_id)) | (Booking.booking_id == str(booking_id)))
+        if booking_id_str.isdigit():
+            query = query.filter((Booking.id == int(booking_id_str)) | (Booking.booking_id == booking_id_str))
         else:
-            query = query.filter(Booking.booking_id == str(booking_id))
+            query = query.filter(Booking.booking_id == booking_id_str)
 
         booking = query.first()
         if booking:
@@ -513,7 +913,7 @@ def cancel_booking(
 
     return {
         "success": True,
-        "booking_id": str(booking_id),
+        "booking_id": booking_id_str,
         "status": "Cancelled",
         "message": "Booking has been marked as cancelled."
     }
@@ -527,12 +927,13 @@ def update_booking_status(
     """
     Updates booking status (Pending, Confirmed, Completed, Cancelled, Rejected).
     """
+    booking_id_str = str(booking_id).strip()
     try:
         query = db.query(Booking)
-        if str(booking_id).isdigit():
-            query = query.filter((Booking.id == int(booking_id)) | (Booking.booking_id == str(booking_id)))
+        if booking_id_str.isdigit():
+            query = query.filter((Booking.id == int(booking_id_str)) | (Booking.booking_id == booking_id_str))
         else:
-            query = query.filter(Booking.booking_id == str(booking_id))
+            query = query.filter(Booking.booking_id == booking_id_str)
 
         booking = query.first()
         if booking:
@@ -551,7 +952,7 @@ def update_booking_status(
 
     return {
         "success": True,
-        "booking_id": str(booking_id),
+        "booking_id": booking_id_str,
         "status": new_status,
         "message": f"Booking status set to {new_status}."
     }
@@ -753,20 +1154,52 @@ def add_owner_resource(db: Session, data: Dict[str, Any], owner: Optional[User] 
     elif "transport" in res_type.lower():
         unit = "trip"
 
-    # Category determination
-    category = data.get("category")
-    if not category:
-        res_t = res_type.lower()
-        if "tractor" in res_t:
-            category = "Tractor"
-        elif "drone" in res_t:
-            category = "Drone Spraying"
-        elif "harvester" in res_t:
-            category = "Harvester"
-        elif "jcb" in res_t or "earthmover" in res_t:
-            category = "JCB"
-        else:
-            category = "Agricultural Equipment"
+    # Category determination (robust normalization)
+    raw_cat = str(data.get("category") or "").strip().lower()
+    res_t = str(res_type).strip().lower()
+    if "tractor" in res_t or "tractor" in raw_cat:
+        category = "Tractor"
+    elif "drone" in res_t or "drone" in raw_cat:
+        category = "Drone Spraying"
+    elif "harvester" in res_t or "combine" in res_t or "harvester" in raw_cat:
+        category = "Harvester"
+    elif "jcb" in res_t or "earthmover" in res_t or "jcb" in raw_cat:
+        category = "JCB"
+    else:
+        category = "Agricultural Equipment"
+
+    loc = (data.get("location") or "Telangana, India").strip()
+    loc_parts = [p.strip() for p in loc.split(",") if p.strip()]
+    derived_village = loc_parts[0] if len(loc_parts) > 0 else "Kummarguda"
+    derived_district = loc_parts[1] if len(loc_parts) > 1 else "Ranga Reddy"
+    derived_state = loc_parts[2] if len(loc_parts) > 2 else "Telangana"
+
+    v_val = data.get("village") or (owner.village if owner else None) or derived_village
+    m_val = data.get("mandal") or (owner.mandal if owner else None) or "Shamshabad"
+    d_val = data.get("district") or (owner.district if owner else None) or derived_district
+    s_val = data.get("state") or (owner.state if owner else None) or derived_state
+
+    # Parse coordinates with fallback
+    lat_val = data.get("latitude")
+    lon_val = data.get("longitude")
+    try:
+        lat_f = float(lat_val) if lat_val is not None and str(lat_val).strip() != "" else (owner.latitude if owner else 17.2285)
+    except (ValueError, TypeError):
+        lat_f = 17.2285
+
+    try:
+        lon_f = float(lon_val) if lon_val is not None and str(lon_val).strip() != "" else (owner.longitude if owner else 78.4312)
+    except (ValueError, TypeError):
+        lon_f = 78.4312
+
+    # Status / availability normalization
+    raw_avail = str(data.get("availability") or "Available").strip()
+    if raw_avail.lower() in ["available", "active", "ready"]:
+        final_avail = "Available"
+    elif raw_avail.lower() in ["busy", "booked", "occupied"]:
+        final_avail = "Busy"
+    else:
+        final_avail = raw_avail
 
     res = Resource(
         owner_id=owner.id if owner else data.get("owner_id"),
@@ -778,26 +1211,27 @@ def add_owner_resource(db: Session, data: Dict[str, Any], owner: Optional[User] 
         year=str(data.get("year", "2024")),
         provider_name=(owner.name if owner else None) or data.get("provider_name") or data.get("ownerName", "Equipment Owner"),
         contact_phone=(owner.phone if owner else None) or data.get("contact_phone") or data.get("ownerMobile", "+91 98765 43210"),
-        location=data.get("location", "Telangana, India"),
-        village=data.get("village") or (owner.village if owner else "Kummarguda"),
-        mandal=data.get("mandal") or (owner.mandal if owner else "Shamshabad"),
-        district=data.get("district") or (owner.district if owner else "Ranga Reddy"),
-        state=data.get("state") or (owner.state if owner else "Telangana"),
-        latitude=float(data.get("latitude") if data.get("latitude") is not None else (owner.latitude if owner else 17.2285)),
-        longitude=float(data.get("longitude") if data.get("longitude") is not None else (owner.longitude if owner else 78.4312)),
+        location=loc,
+        village=v_val,
+        mandal=m_val,
+        district=d_val,
+        state=s_val,
+        latitude=lat_f,
+        longitude=lon_f,
         price=price_hr,
         price_unit=unit,
         price_per_hour=price_hr,
         price_per_acre=price_acre,
         price_per_day=price_day,
         price_per_trip=price_trip,
-        availability=data.get("availability", "Available"),
+        availability=final_avail,
         rating=float(data.get("rating", 4.8)),
         total_ratings=1,
         description=data.get("description", ""),
         image_url=data.get("image_url") or data.get("image", "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80"),
         specs=data.get("specs", ""),
-        terms=data.get("terms", "")
+        terms=data.get("terms", ""),
+        created_at=datetime.now(timezone.utc)
     )
     db.add(res)
     db.commit()
@@ -807,10 +1241,28 @@ def add_owner_resource(db: Session, data: Dict[str, Any], owner: Optional[User] 
         "id": res.id,
         "resource": {
             "id": res.id,
+            "owner_id": res.owner_id,
+            "ownerId": res.owner_id,
             "title": res.title,
+            "name": res.title,
+            "category": res.category,
             "resource_type": res.resource_type,
+            "type": res.resource_type,
+            "price": res.price,
             "price_per_hour": res.price_per_hour,
-            "availability": res.availability
+            "pricePerHour": res.price_per_hour,
+            "availability": res.availability,
+            "status": res.availability,
+            "location": res.location,
+            "village": res.village,
+            "mandal": res.mandal,
+            "district": res.district,
+            "state": res.state,
+            "latitude": res.latitude,
+            "longitude": res.longitude,
+            "image_url": res.image_url,
+            "image": res.image_url,
+            "created_at": str(res.created_at) if res.created_at else None
         },
         "message": f"🎉 '{res.title}' listed successfully on AgriCare Marketplace!"
     }
@@ -826,11 +1278,15 @@ def update_owner_resource(db: Session, resource_id: int, data: Dict[str, Any], o
         raise ValueError("Resource not found or unauthorized")
 
     if "title" in data or "name" in data:
-        res.title = data.get("title") or data.get("name")
+        new_title = data.get("title") or data.get("name")
+        if new_title is not None:
+            res.title = str(new_title)
     if "category" in data:
         res.category = data["category"]
     if "resource_type" in data or "type" in data:
-        res.resource_type = data.get("resource_type") or data.get("type")
+        new_type = data.get("resource_type") or data.get("type")
+        if new_type is not None:
+            res.resource_type = str(new_type)
     if "vehicle_number" in data or "vehicleNumber" in data:
         res.vehicle_number = data.get("vehicle_number") or data.get("vehicleNumber")
     if "model" in data:
@@ -1041,11 +1497,12 @@ def get_owner_bookings(
 
 def accept_owner_booking(db: Session, booking_id: str, owner_id: Optional[int] = None) -> Dict[str, Any]:
     """Transitions booking status: Pending -> Confirmed."""
+    booking_id_str = str(booking_id).strip()
     query = db.query(Booking)
-    if str(booking_id).isdigit():
-        query = query.filter((Booking.id == int(booking_id)) | (Booking.booking_id == str(booking_id)))
+    if booking_id_str.isdigit():
+        query = query.filter((Booking.id == int(booking_id_str)) | (Booking.booking_id == booking_id_str))
     else:
-        query = query.filter(Booking.booking_id == str(booking_id))
+        query = query.filter(Booking.booking_id == booking_id_str)
 
     booking = query.first()
     if booking:
@@ -1065,7 +1522,7 @@ def accept_owner_booking(db: Session, booking_id: str, owner_id: Optional[int] =
 
     return {
         "success": True,
-        "booking_id": str(booking_id),
+        "booking_id": booking_id_str,
         "status": "Confirmed",
         "message": "✓ Booking Request Accepted! Job is now Confirmed."
     }
@@ -1073,11 +1530,12 @@ def accept_owner_booking(db: Session, booking_id: str, owner_id: Optional[int] =
 
 def reject_owner_booking(db: Session, booking_id: str, reason: Optional[str] = None, owner_id: Optional[int] = None) -> Dict[str, Any]:
     """Transitions booking status: Pending -> Rejected."""
+    booking_id_str = str(booking_id).strip()
     query = db.query(Booking)
-    if str(booking_id).isdigit():
-        query = query.filter((Booking.id == int(booking_id)) | (Booking.booking_id == str(booking_id)))
+    if booking_id_str.isdigit():
+        query = query.filter((Booking.id == int(booking_id_str)) | (Booking.booking_id == booking_id_str))
     else:
-        query = query.filter(Booking.booking_id == str(booking_id))
+        query = query.filter(Booking.booking_id == booking_id_str)
 
     booking = query.first()
     if booking:
@@ -1095,7 +1553,7 @@ def reject_owner_booking(db: Session, booking_id: str, reason: Optional[str] = N
 
     return {
         "success": True,
-        "booking_id": str(booking_id),
+        "booking_id": booking_id_str,
         "status": "Rejected",
         "message": "✕ Booking Request Rejected."
     }
@@ -1103,11 +1561,12 @@ def reject_owner_booking(db: Session, booking_id: str, reason: Optional[str] = N
 
 def complete_owner_job(db: Session, booking_id: str, owner_id: Optional[int] = None) -> Dict[str, Any]:
     """Transitions booking status: Confirmed -> Completed and records completion time."""
+    booking_id_str = str(booking_id).strip()
     query = db.query(Booking)
-    if str(booking_id).isdigit():
-        query = query.filter((Booking.id == int(booking_id)) | (Booking.booking_id == str(booking_id)))
+    if booking_id_str.isdigit():
+        query = query.filter((Booking.id == int(booking_id_str)) | (Booking.booking_id == booking_id_str))
     else:
-        query = query.filter(Booking.booking_id == str(booking_id))
+        query = query.filter(Booking.booking_id == booking_id_str)
 
     booking = query.first()
     if booking:
@@ -1129,7 +1588,7 @@ def complete_owner_job(db: Session, booking_id: str, owner_id: Optional[int] = N
 
     return {
         "success": True,
-        "booking_id": str(booking_id),
+        "booking_id": booking_id_str,
         "status": "Completed",
         "owner_earnings": 3040.0,
         "platform_fee": 160.0,

@@ -121,13 +121,22 @@ try:
 except Exception as e:
     print(f"DB column verification note: {e}")
 
+# Initial database baseline resource seeding if empty
+try:
+    from database.database import SessionLocal
+    with SessionLocal() as db_init:
+        from resources.resource_service import seed_default_resources_if_empty
+        seed_default_resources_if_empty(db_init)
+except Exception as e:
+    print(f"Initial DB resource seeding check error: {e}")
+
 app = FastAPI(
     title="AgriCare AI API",
     description="Backend API for AgriCare AI — AI Farmer Platform",
     version="2.0.0"
 )
 
-# CORS Middleware allowing Owner Portal (5177 / 5175 / 5174), Farmer Portal (5173), and production domains
+# CORS Middleware allowing Owner Portal, Farmer Portal, and production domains
 ALLOWED_ORIGINS = [
     "http://localhost:5177",
     "http://127.0.0.1:5177",
@@ -145,6 +154,7 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "https://hv-2026-0051-vortex.vercel.app",
     "https://hv2026-0051-vortex.vercel.app",
+    "https://agri-care-resource-owner.vercel.app",
 ]
 
 app.add_middleware(

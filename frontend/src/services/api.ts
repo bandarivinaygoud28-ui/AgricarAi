@@ -915,10 +915,15 @@ export const api = {
     const qs = query.toString();
     const apiUrl = `${API_BASE}/resources${qs ? `?${qs}` : ''}`;
     const res = await fetch(apiUrl);
+    console.log('[RESOURCE FETCH]\nGET URL:', apiUrl, '\nSTATUS:', res.status);
     if (!res.ok) {
       throw new Error(`Failed to fetch resources (${res.status})`);
     }
     const rawData = await res.json();
+    console.log(
+      '[RESOURCE FETCH]\nRESPONSE:', rawData,
+      '\nRESOURCE COUNT:', Array.isArray(rawData) ? rawData.length : 0
+    );
 
     const backendRoot = API_BASE.replace(/\/api\/?$/, '');
     const mapped: FarmResource[] = (Array.isArray(rawData) ? rawData : []).map((item: any) => {

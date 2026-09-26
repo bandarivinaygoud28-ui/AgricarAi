@@ -217,6 +217,7 @@ export const AddResourcePage: React.FC<AddResourcePageProps> = ({
     const payload = {
       title,
       name: title,
+      category: resourceType,
       resource_type: resourceType,
       type: resourceType,
       vehicle_number: vehicleNumber,
